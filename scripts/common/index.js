@@ -10,7 +10,7 @@ define('common/routes',[], function() {
     }).state('testAuth', {
       url: '/testAuth',
       access: {allowAnonymous: false},
-      templateUrl: '../views/experiments/testAuth.html',
+      templateUrl: 'views/experiments/testAuth.html',
       controller: 'LoginController as lc'
     });
   };

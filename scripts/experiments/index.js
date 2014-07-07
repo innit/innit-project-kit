@@ -4,7 +4,7 @@ define('experiments/routes',[], function() {
     
     return $stateProvider.state('slow', {
       url: '/slow',
-      templateUrl: '../views/experiments/experiment.html',
+      templateUrl: 'views/experiments/experiment.html',
       controller: 'ExperimentController',
       resolve: {dummy: ['$stateParams', '$timeout', function($stateParams, $timeout) {
           return $timeout((function() {
@@ -23,11 +23,11 @@ define('experiments/routes',[], function() {
       }
     }).state('experiments', {
       url: '/experiments',
-      templateUrl: '../views/experiments/experiment.html',
+      templateUrl: 'views/experiments/experiment.html',
       controller: 'ExperimentController'
     }).state('translations', {
       url: '/translations',
-      templateUrl: '../views/experiments/growlTranslate.html',
+      templateUrl: 'views/experiments/growlTranslate.html',
       controller: 'GrowlTranslateDemoController',
       resolve: {myTranslations: function($translatePartialLoader, $translate) {
           $translatePartialLoader.addPart('common');
@@ -36,11 +36,11 @@ define('experiments/routes',[], function() {
         }}
     }).state('elements', {
       url: '/elements',
-      templateUrl: '../views/experiments/elements.html',
+      templateUrl: 'views/experiments/elements.html',
       controller: 'ElementsController'
     }).state('todoMVC', {
       url: '/todo',
-      templateUrl: '../views/experiments/todo.html',
+      templateUrl: 'views/experiments/todo.html',
       controller: 'TodoController as tc'
     });
   };
