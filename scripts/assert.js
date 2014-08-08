@@ -56,6 +56,9 @@ define([], function() {
     return value.__assertName || value.name || value.toString();
   }
   function isType(value, T, errors) {
+    if (typeof value === 'undefined') {
+      return true;
+    }
     if (T === primitives.void) {
       return typeof value === 'undefined';
     }
@@ -138,7 +141,7 @@ define([], function() {
             $__1; !($__1 = $__0.next()).done; ) {
           var item = $__1.value;
           {
-            ($__5 = assert(item)).is.apply($__5, $traceurRuntime.toObject(types));
+            ($__5 = assert(item)).is.apply($__5, $traceurRuntime.spread(types));
           }
         }
       }
@@ -195,7 +198,7 @@ define([], function() {
             }
           }
         }
-        ($__5 = currentStack).push.apply($__5, $traceurRuntime.toObject(allErrors));
+        ($__5 = currentStack).push.apply($__5, $traceurRuntime.spread(allErrors));
         return false;
       }};
   }

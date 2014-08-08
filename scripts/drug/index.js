@@ -1,6 +1,6 @@
 define('drug/routes',[], function() {
   
-  var $__default = function routes($urlRouterProvider, $stateProvider) {
+  function routes($urlRouterProvider, $stateProvider) {
     
     $urlRouterProvider.when('/drugs', '/drugs/list');
     return $stateProvider.state('drugs', {
@@ -65,7 +65,8 @@ define('drug/routes',[], function() {
           controller: 'DrugDetailController'
         }}
     });
-  };
+  }
+  var $__default = routes;
   return {
     get default() {
       return $__default;
@@ -180,39 +181,38 @@ define('drug/controllers/DrugSearchController',['../services/DrugService'], func
   
   if (!$__0 || !$__0.__esModule)
     $__0 = {'default': $__0};
-  var $__3 = $traceurRuntime.assertObject($__0),
-      DRUG_LIST_PARAMS = $__3.DRUG_LIST_PARAMS,
-      DRUG_SEARCH_PARAMS = $__3.DRUG_SEARCH_PARAMS;
+  var $__1 = $__0,
+      DRUG_LIST_PARAMS = $__1.DRUG_LIST_PARAMS,
+      DRUG_SEARCH_PARAMS = $__1.DRUG_SEARCH_PARAMS;
   var state = Symbol('state', true);
-  var $__default = (function() {
-    var DrugSearchController = function DrugSearchController($scope, growl, drugs, DrugService, $state) {
-      var $__1 = this;
-      console.log('in DrugSearchController');
-      $traceurRuntime.setProperty(this, state, $state);
-      this.drugListParams = DRUG_LIST_PARAMS;
-      this.drugSearchParams = DRUG_SEARCH_PARAMS;
-      $scope.$parent.dbCursorMove = (function(n) {
-        console.log('xxxxx', n);
-        if ($__1[$traceurRuntime.toProperty(state)].current.name === 'drugs.search' || $__1[$traceurRuntime.toProperty(state)].current.name === 'drugs.search.detail') {
-          $__1.drugSearchParams.offset = $__1.drugSearchParams.offset + n;
-        } else if ($__1[$traceurRuntime.toProperty(state)].current.name === 'drugs.list' || $__1[$traceurRuntime.toProperty(state)].current.name === 'drugs.list.detail') {
-          $__1.drugListParams.offset = $__1.drugListParams.offset + n;
-        }
-        $__1[$traceurRuntime.toProperty(state)].transitionTo($__1[$traceurRuntime.toProperty(state)].current, null, {
-          reload: true,
-          inherit: true,
-          notify: true
-        });
+  var DrugSearchController = function DrugSearchController($scope, growl, drugs, DrugService, $state) {
+    var $__2 = this;
+    console.log('in DrugSearchController');
+    $traceurRuntime.setProperty(this, state, $state);
+    this.drugListParams = DRUG_LIST_PARAMS;
+    this.drugSearchParams = DRUG_SEARCH_PARAMS;
+    $scope.$parent.dbCursorMove = (function(n) {
+      console.log('xxxxx', n);
+      if ($__2[$traceurRuntime.toProperty(state)].current.name === 'drugs.search' || $__2[$traceurRuntime.toProperty(state)].current.name === 'drugs.search.detail') {
+        $__2.drugSearchParams.offset = $__2.drugSearchParams.offset + n;
+      } else if ($__2[$traceurRuntime.toProperty(state)].current.name === 'drugs.list' || $__2[$traceurRuntime.toProperty(state)].current.name === 'drugs.list.detail') {
+        $__2.drugListParams.offset = $__2.drugListParams.offset + n;
+      }
+      $__2[$traceurRuntime.toProperty(state)].transitionTo($__2[$traceurRuntime.toProperty(state)].current, null, {
+        reload: true,
+        inherit: true,
+        notify: true
       });
-    };
-    return ($traceurRuntime.createClass)(DrugSearchController, {onSearch: function() {
-        this[$traceurRuntime.toProperty(state)].transitionTo('drugs.search', null, {
-          reload: true,
-          inherit: true,
-          notify: true
-        });
-      }}, {});
-  }());
+    });
+  };
+  ($traceurRuntime.createClass)(DrugSearchController, {onSearch: function() {
+      this[$traceurRuntime.toProperty(state)].transitionTo('drugs.search', null, {
+        reload: true,
+        inherit: true,
+        notify: true
+      });
+    }}, {});
+  var $__default = DrugSearchController;
   return {
     get default() {
       return $__default;
@@ -223,26 +223,25 @@ define('drug/controllers/DrugSearchController',['../services/DrugService'], func
 
 define('drug/controllers/DrugResultsController',[], function() {
   
-  var $__default = (function() {
-    var DrugResultsController = function DrugResultsController($scope, growl, drugs, $filter, ngTableParams) {
-      console.log('in DrugResultsController');
-      $scope.tableParams = new ngTableParams({
-        page: 1,
-        count: 3,
-        sorting: {ndc: 'asc'}
-      }, {
-        total: drugs.length,
-        getData: function($defer, params) {
-          var filteredData = params.filter() ? $filter('filter')(drugs, params.filter()) : drugs;
-          var orderedData = params.sorting() ? $filter('orderBy')(filteredData, params.orderBy()) : filteredData;
-          $scope.drugs = orderedData.slice((params.page() - 1) * params.count(), params.page() * params.count());
-          params.total(orderedData.length);
-          $defer.resolve($scope.drugs);
-        }
-      });
-    };
-    return ($traceurRuntime.createClass)(DrugResultsController, {}, {});
-  }());
+  var DrugResultsController = function DrugResultsController($scope, growl, drugs, $filter, ngTableParams) {
+    console.log('in DrugResultsController');
+    $scope.tableParams = new ngTableParams({
+      page: 1,
+      count: 3,
+      sorting: {ndc: 'asc'}
+    }, {
+      total: drugs.length,
+      getData: function($defer, params) {
+        var filteredData = params.filter() ? $filter('filter')(drugs, params.filter()) : drugs;
+        var orderedData = params.sorting() ? $filter('orderBy')(filteredData, params.orderBy()) : filteredData;
+        $scope.drugs = orderedData.slice((params.page() - 1) * params.count(), params.page() * params.count());
+        params.total(orderedData.length);
+        $defer.resolve($scope.drugs);
+      }
+    });
+  };
+  ($traceurRuntime.createClass)(DrugResultsController, {}, {});
+  var $__default = DrugResultsController;
   return {
     get default() {
       return $__default;
@@ -253,12 +252,11 @@ define('drug/controllers/DrugResultsController',[], function() {
 
 define('drug/controllers/DrugDetailController',[], function() {
   
-  var $__default = (function() {
-    var DrugDetailController = function DrugDetailController($scope, drug) {
-      $scope.selectedDrug = drug;
-    };
-    return ($traceurRuntime.createClass)(DrugDetailController, {}, {});
-  }());
+  var DrugDetailController = function DrugDetailController($scope, drug) {
+    $scope.selectedDrug = drug;
+  };
+  ($traceurRuntime.createClass)(DrugDetailController, {}, {});
+  var $__default = DrugDetailController;
   return {
     get default() {
       return $__default;
@@ -267,26 +265,26 @@ define('drug/controllers/DrugDetailController',[], function() {
   };
 });
 
-define('drug/index',['./routes', './controllers/DrugSearchController', './controllers/DrugResultsController', './controllers/DrugDetailController', './services/DrugService'], function($__0,$__1,$__2,$__3,$__4) {
+define('drug/index',['./routes', './controllers/DrugSearchController', './controllers/DrugResultsController', './controllers/DrugDetailController', './services/DrugService'], function($__0,$__2,$__4,$__6,$__8) {
   
   if (!$__0 || !$__0.__esModule)
     $__0 = {'default': $__0};
-  if (!$__1 || !$__1.__esModule)
-    $__1 = {'default': $__1};
   if (!$__2 || !$__2.__esModule)
     $__2 = {'default': $__2};
-  if (!$__3 || !$__3.__esModule)
-    $__3 = {'default': $__3};
   if (!$__4 || !$__4.__esModule)
     $__4 = {'default': $__4};
-  var routes = $traceurRuntime.assertObject($__0).default;
-  var DrugSearchController = $traceurRuntime.assertObject($__1).default;
-  var DrugResultsController = $traceurRuntime.assertObject($__2).default;
-  var DrugDetailController = $traceurRuntime.assertObject($__3).default;
-  var $__5 = $traceurRuntime.assertObject($__4),
-      DRUG_SEARCH_CONFIG = $__5.DRUG_SEARCH_CONFIG,
-      DrugRestangular = $__5.DrugRestangular,
-      DrugService = $__5.DrugService;
+  if (!$__6 || !$__6.__esModule)
+    $__6 = {'default': $__6};
+  if (!$__8 || !$__8.__esModule)
+    $__8 = {'default': $__8};
+  var routes = $__0.default;
+  var DrugSearchController = $__2.default;
+  var DrugResultsController = $__4.default;
+  var DrugDetailController = $__6.default;
+  var $__9 = $__8,
+      DRUG_SEARCH_CONFIG = $__9.DRUG_SEARCH_CONFIG,
+      DrugRestangular = $__9.DrugRestangular,
+      DrugService = $__9.DrugService;
   var moduleName = 'spaApp.drug';
   var drugModule = angular.module(moduleName, ['restangular', 'ngTable']);
   drugModule.factory('DrugRestangular', DrugRestangular);

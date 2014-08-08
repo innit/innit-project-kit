@@ -1,4 +1,4 @@
-define(['angular-mocks', 'text!../../test/fixtures/drugs_1.json', 'text!../../test/fixtures/drugs_2.json', 'text!../../test/fixtures/drug_1.json', 'text!../../test/fixtures/drug_2.json', 'text!../../test/fixtures/drug_3.json', 'text!../../test/fixtures/providers_11.json', 'text!../../test/fixtures/providers_12.json', 'text!../../test/fixtures/providers_2.json', 'text!../../test/fixtures/specialties_A.json', 'text!../../test/fixtures/specialties_B.json', 'text!../../test/fixtures/specialties_C.json', 'text!../../test/fixtures/specialties_D.json', 'text!../../test/fixtures/specialties_E.json', 'text!../../test/fixtures/specialties_F.json', 'text!../../test/fixtures/specialties_S.json', 'text!../../test/fixtures/sumo_profile.json', 'text!../../test/fixtures/businessadmin_profile.json', 'text!../../test/fixtures/itadmin_profile.json', 'text!../../test/fixtures/dataadmin_profile.json'], function($__0,$__1,$__2,$__3,$__4,$__5,$__6,$__7,$__8,$__9,$__10,$__11,$__12,$__13,$__14,$__15,$__16,$__17,$__18,$__19) {
+define(['angular-mocks', 'text!../../test/fixtures/drugs_1.json', 'text!../../test/fixtures/drugs_2.json', 'text!../../test/fixtures/drug_1.json', 'text!../../test/fixtures/drug_2.json', 'text!../../test/fixtures/drug_3.json', 'text!../../test/fixtures/providers_11.json', 'text!../../test/fixtures/providers_12.json', 'text!../../test/fixtures/providers_2.json', 'text!../../test/fixtures/specialties_A.json', 'text!../../test/fixtures/specialties_B.json', 'text!../../test/fixtures/specialties_C.json', 'text!../../test/fixtures/specialties_D.json', 'text!../../test/fixtures/specialties_E.json', 'text!../../test/fixtures/specialties_F.json', 'text!../../test/fixtures/specialties_S.json', 'text!../../test/fixtures/sumo_profile.json', 'text!../../test/fixtures/businessadmin_profile.json', 'text!../../test/fixtures/itadmin_profile.json', 'text!../../test/fixtures/dataadmin_profile.json', './common/services/EventBus'], function($__0,$__1,$__2,$__3,$__4,$__5,$__6,$__7,$__8,$__9,$__10,$__11,$__12,$__13,$__14,$__15,$__16,$__17,$__18,$__19,$__20) {
   
   if (!$__0 || !$__0.__esModule)
     $__0 = {'default': $__0};
@@ -40,6 +40,8 @@ define(['angular-mocks', 'text!../../test/fixtures/drugs_1.json', 'text!../../te
     $__18 = {'default': $__18};
   if (!$__19 || !$__19.__esModule)
     $__19 = {'default': $__19};
+  if (!$__20 || !$__20.__esModule)
+    $__20 = {'default': $__20};
   $__0;
   $__1;
   $__2;
@@ -60,8 +62,14 @@ define(['angular-mocks', 'text!../../test/fixtures/drugs_1.json', 'text!../../te
   $__17;
   $__18;
   $__19;
+  var EBUS_CONFIG = $__20.EBUS_CONFIG;
   var moduleName = 'spaApp.test.env';
   var testEnvModule = angular.module(moduleName, ['ngMockE2E']);
+  testEnvModule.config((function() {
+    
+    console.log('in testEnvModule... ');
+    EBUS_CONFIG.BASE_URL = 'http://localhost:8080/apiApp/stomp';
+  }));
   testEnvModule.run((function($httpBackend) {
     
     console.log('in testEnvModule... ');
