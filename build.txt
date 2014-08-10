@@ -90,7 +90,6 @@ scripts/experiments/elements/customButton/CustomButton.js
 scripts/experiments/elements/myNews/MyNews.js
 scripts/experiments/elements/highlighter.js
 scripts/experiments/index.js
-scripts/templates.js
 /Developer/Work/spa-starter-kit/bower_components/angular-mocks/angular-mocks.js
 /Developer/Work/spa-starter-kit/bower_components/requirejs-text/text.js
 text!../../test/fixtures/drugs_1.json
@@ -112,6 +111,7 @@ text!../../test/fixtures/sumo_profile.json
 text!../../test/fixtures/businessadmin_profile.json
 text!../../test/fixtures/itadmin_profile.json
 text!../../test/fixtures/dataadmin_profile.json
+scripts/templates.js
 scripts/index.js
 scripts/bootstrap.js
 

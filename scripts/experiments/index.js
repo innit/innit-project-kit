@@ -1543,10 +1543,7 @@ define('experiments/controllers/MessagingController',[], function() {
           $__0.AAPL = JSON.parse(message.body);
           break;
         case '/topic/price.stock.GOOG':
-          var random = (Math.floor((Math.random() * 15) + 1));
-          var plusOrMinus = Math.random() < 0.5 ? -1 : 1;
-          random = random * plusOrMinus;
-          $__0.GOOG = random;
+          $__0.GOOG = JSON.parse(message.body);
           break;
         case '/topic/price.stock.YHOO':
           $__0.YHOO = JSON.parse(message.body);
@@ -1610,6 +1607,10 @@ define('experiments/controllers/MessagingController',[], function() {
       if (this.selectedUser === 'All') {
         this[$traceurRuntime.toProperty(_eventBus)].publish('/app/chat/messages', newMessage);
       } else {
+        this.messages.push({
+          message: ("[ >> " + this.selectedUser + "]: " + newMessage),
+          private: true
+        });
         this[$traceurRuntime.toProperty(_eventBus)].publish(("/user/" + this.selectedUser + "/queue/chat/messages"), ("[" + this[$traceurRuntime.toProperty(_eventBus)].getUser() + "]: " + newMessage));
       }
       this.newMessage = '';

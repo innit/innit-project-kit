@@ -7986,7 +7986,6 @@ define('common/services/EventBus',['sockjs', 'stomp', '../utils/Enum', '../../re
       var force = arguments[0] !== (void 0) ? arguments[0] : false;
       var onDisconnect = arguments[1] !== (void 0) ? arguments[1] : this[$traceurRuntime.toProperty(onDisconnectDefaultListener)];
       var $__6 = this;
-      console.log('force: ', force);
       return new Promise((function(resolve, reject) {
         if (force || $__6[$traceurRuntime.toProperty(readyState)] >= ReadyState.CLOSED) {
           try {
@@ -8193,6 +8192,8 @@ define('common/index',['./routes', './controllers/LoginController', './controlle
       Object.observe(eventBus, (function(changes) {
         $rootScope.$apply();
       }), ['update']);
+    } else {
+      console.warn('O.o() not supported');
     }
     var onDisconnectListener = (function(error) {
       console.log('in onDisconnectListener - Error: ', error);
