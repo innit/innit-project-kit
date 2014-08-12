@@ -2263,7 +2263,7 @@ angular.module('ngSanitize').filter('linky', ['$sanitize', function($sanitize) {
 define("angular-sanitize", ["angular"], function(){});
 
 /**
- * angular-growl-v2 - v0.6.1 - 2014-05-25
+ * angular-growl-v2 - v0.7.0 - 2014-08-10
  * http://janstevens.github.io/angular-growl-2
  * Copyright (c) 2014 Marco Rinck,Jan Stevens; Licensed MIT
  */
@@ -2279,7 +2279,8 @@ angular.module('angular-growl').directive('growl', [
       replace: false,
       scope: {
         reference: '@',
-        inline: '@'
+        inline: '@',
+        limitMessages: '='
       },
       controller: [
         '$scope',
@@ -2292,19 +2293,8 @@ angular.module('angular-growl').directive('growl', [
           $scope.inlineMessage = $scope.inline || growl.inlineMessages();
           function addMessage(message) {
             $timeout(function () {
-              message.text = $sce.trustAsHtml(String(message.text));
-              $scope.messages.push(message);
-              if (message.ttl && message.ttl !== -1) {
-                $timeout(function () {
-                  $scope.deleteMessage(message);
-                }, message.ttl);
-              }
-            }, true);
-          }
-          $rootScope.$on('growlMessage', function (event, message) {
-            var found;
-            var msgText;
-            if (parseInt(referenceId, 10) === parseInt(message.referenceId, 10)) {
+              var found;
+              var msgText;
               if (onlyUnique) {
                 angular.forEach($scope.messages, function (msg) {
                   msgText = $sce.getTrustedHtml(msg.text);
@@ -2312,18 +2302,62 @@ angular.module('angular-growl').directive('growl', [
                     found = true;
                   }
                 });
-                if (!found) {
-                  addMessage(message);
+                if (found) {
+                  return;
                 }
-              } else {
-                addMessage(message);
               }
+              message.text = $sce.trustAsHtml(String(message.text));
+              if (message.ttl && message.ttl !== -1) {
+                message.countdown = message.ttl / 1000;
+                message.promises = [];
+                message.close = false;
+                message.countdownFunction = function () {
+                  if (message.countdown > 1) {
+                    message.countdown--;
+                    message.promises.push($timeout(message.countdownFunction, 1000));
+                  } else {
+                    message.countdown--;
+                  }
+                };
+              }
+              if (angular.isDefined($scope.limitMessages)) {
+                var diff = $scope.messages.length - ($scope.limitMessages - 1);
+                if (diff > 0) {
+                  $scope.messages.splice($scope.limitMessages - 1, diff);
+                }
+              }
+              if (growl.reverseOrder()) {
+                $scope.messages.unshift(message);
+              } else {
+                $scope.messages.push(message);
+              }
+              if (message.ttl && message.ttl !== -1) {
+                message.promises.push($timeout(function () {
+                  $scope.deleteMessage(message);
+                }, message.ttl));
+                message.promises.push($timeout(message.countdownFunction, 1000));
+              }
+            }, true);
+          }
+          $rootScope.$on('growlMessage', function (event, message) {
+            if (parseInt(referenceId, 10) === parseInt(message.referenceId, 10)) {
+              addMessage(message);
             }
           });
           $scope.deleteMessage = function (message) {
             var index = $scope.messages.indexOf(message);
             if (index > -1) {
               $scope.messages.splice(index, 1);
+            }
+          };
+          $scope.stopTimeoutClose = function (message) {
+            angular.forEach(message.promises, function (promise) {
+              $timeout.cancel(promise);
+            });
+            if (message.close) {
+              $scope.deleteMessage(message);
+            } else {
+              message.close = true;
             }
           };
           $scope.alertClasses = function (message) {
@@ -2336,6 +2370,9 @@ angular.module('angular-growl').directive('growl', [
               'icon': message.disableIcons === false,
               'alert-dismissable': !message.disableCloseButton
             };
+          };
+          $scope.showCountDown = function (message) {
+            return !message.disableCountDown && message.ttl > 0;
           };
           $scope.wrapperClasses = function () {
             var classes = {};
@@ -2361,7 +2398,9 @@ angular.module('angular-growl').run([
   '$templateCache',
   function ($templateCache) {
     
-    $templateCache.put('templates/growl/growl.html', '<div class="growl-container" ng-class="wrapperClasses()">' + '<div class="growl-item alert" ng-repeat="message in messages" ng-class="alertClasses(message)">' + '<button type="button" class="close" data-dismiss="alert" aria-hidden="true" ng-click="deleteMessage(message)" ng-show="!message.disableCloseButton">&times;</button>' + '<h4 class="growl-title" ng-show="message.title" ng-bind="message.title"></h4>' + '<div class="growl-message" ng-bind-html="message.text"></div>' + '</div>' + '</div>');
+    if ($templateCache.get('templates/growl/growl.html') === undefined) {
+      $templateCache.put('templates/growl/growl.html', '<div class="growl-container" ng-class="wrapperClasses()">' + '<div class="growl-item alert" ng-repeat="message in messages" ng-class="alertClasses(message)" ng-click="stopTimeoutClose(message)">' + '<button type="button" class="close" data-dismiss="alert" aria-hidden="true" ng-click="deleteMessage(message)" ng-show="!message.disableCloseButton">&times;</button>' + '<button type="button" class="close" aria-hidden="true" ng-show="showCountDown(message)">{{message.countdown}}</button>' + '<h4 class="growl-title" ng-show="message.title" ng-bind="message.title"></h4>' + '<div class="growl-message" ng-bind-html="message.text"></div>' + '</div>' + '</div>');
+    }
   }
 ]);
 angular.module('angular-growl').provider('growl', function () {
@@ -2371,7 +2410,7 @@ angular.module('angular-growl').provider('growl', function () {
       error: null,
       warning: null,
       info: null
-    }, _messagesKey = 'messages', _messageTextKey = 'text', _messageTitleKey = 'title', _messageSeverityKey = 'severity', _onlyUniqueMessages = true, _messageVariableKey = 'variables', _referenceId = 0, _inline = false, _position = 'top-right', _disableCloseButton = false, _disableIcons = false;
+    }, _messagesKey = 'messages', _messageTextKey = 'text', _messageTitleKey = 'title', _messageSeverityKey = 'severity', _onlyUniqueMessages = true, _messageVariableKey = 'variables', _referenceId = 0, _inline = false, _position = 'top-right', _disableCloseButton = false, _disableIcons = false, _reverseOrder = false, _disableCountDown = false;
   this.globalTimeToLive = function (ttl) {
     if (typeof ttl === 'object') {
       for (var k in ttl) {
@@ -2392,6 +2431,12 @@ angular.module('angular-growl').provider('growl', function () {
   };
   this.globalDisableIcons = function (disableIcons) {
     _disableIcons = disableIcons;
+  };
+  this.globalReversedOrder = function (reverseOrder) {
+    _reverseOrder = reverseOrder;
+  };
+  this.globalDisableCountDown = function (countDown) {
+    _disableCountDown = countDown;
   };
   this.messageVariableKey = function (messageVariableKey) {
     _messageVariableKey = messageVariableKey;
@@ -2426,16 +2471,15 @@ angular.module('angular-growl').provider('growl', function () {
           growl.addServerMessages(response.data[_messagesKey]);
         }
       }
-      function success(response) {
-        checkResponse(response);
-        return response;
-      }
-      function error(response) {
-        checkResponse(response);
-        return $q.reject(response);
-      }
-      return function (promise) {
-        return promise.then(success, error);
+      return {
+        'response': function (response) {
+          checkResponse(response);
+          return response;
+        },
+        'responseError': function (rejection) {
+          checkResponse(rejection);
+          return $q.reject(rejection);
+        }
       };
     }
   ];
@@ -2466,8 +2510,9 @@ angular.module('angular-growl').provider('growl', function () {
           severity: severity,
           ttl: _config.ttl || _ttl[severity],
           variables: _config.variables || {},
-          disableCloseButton: _config.disableCloseButton || _disableCloseButton,
+          disableCloseButton: _config.disableCloseButton === undefined ? _disableCloseButton : _config.disableCloseButton,
           disableIcons: _config.disableIcons === undefined ? _disableIcons : _config.disableIcons,
+          disableCountDown: _config.disableCountDown === undefined ? _disableCountDown : _config.disableCountDown,
           position: _config.position || _position,
           referenceId: _config.referenceId || _referenceId
         };
@@ -2502,6 +2547,9 @@ angular.module('angular-growl').provider('growl', function () {
       function onlyUnique() {
         return _onlyUniqueMessages;
       }
+      function reverseOrder() {
+        return _reverseOrder;
+      }
       function inlineMessages() {
         return _inline;
       }
@@ -2515,6 +2563,7 @@ angular.module('angular-growl').provider('growl', function () {
         success: success,
         addServerMessages: addServerMessages,
         onlyUnique: onlyUnique,
+        reverseOrder: reverseOrder,
         inlineMessages: inlineMessages,
         position: position
       };

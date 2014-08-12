@@ -1611,7 +1611,7 @@ define('experiments/controllers/MessagingController',[], function() {
           message: ("[ >> " + this.selectedUser + "]: " + newMessage),
           private: true
         });
-        this[$traceurRuntime.toProperty(_eventBus)].publish(("/user/" + this.selectedUser + "/queue/chat/messages"), ("[" + this[$traceurRuntime.toProperty(_eventBus)].getUser() + "]: " + newMessage));
+        this[$traceurRuntime.toProperty(_eventBus)].publish(("/user/" + this.selectedUser + "/queue/chat/messages"), '[' + this[$traceurRuntime.toProperty(_eventBus)].getUser() + ']: ' + newMessage);
       }
       this.newMessage = '';
     }

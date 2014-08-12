@@ -37816,7 +37816,7 @@ define('experiments/controllers/MessagingController',[], function() {
           message: ("[ >> " + this.selectedUser + "]: " + newMessage),
           private: true
         });
-        this[$traceurRuntime.toProperty(_eventBus)].publish(("/user/" + this.selectedUser + "/queue/chat/messages"), ("[" + this[$traceurRuntime.toProperty(_eventBus)].getUser() + "]: " + newMessage));
+        this[$traceurRuntime.toProperty(_eventBus)].publish(("/user/" + this.selectedUser + "/queue/chat/messages"), '[' + this[$traceurRuntime.toProperty(_eventBus)].getUser() + ']: ' + newMessage);
       }
       this.newMessage = '';
     }
@@ -46843,6 +46843,197 @@ define('text!../../test/fixtures/itadmin_profile.json',[],function () { return '
 
 
 define('text!../../test/fixtures/dataadmin_profile.json',[],function () { return '{\n    "accountNonExpired": true,\n    "accountNonLocked": true,\n    "authorities": [\n        {\n            "authority": "ROLE_DATA_ADMIN",\n            "class": "org.springframework.security.core.authority.SimpleGrantedAuthority"\n        },\n        {\n            "authority": "ROLE_USER",\n            "class": "org.springframework.security.core.authority.SimpleGrantedAuthority"\n        }\n    ],\n    "credentialsNonExpired": true,\n    "departmentNumber": "NO_DEP",\n    "displayName": "Data, Sumanth",\n    "email": "sumo@demo.com",\n    "enabled": true,\n    "id": 4,\n    "ldapAuth": false,\n    "postalCode": "55555",\n    "title": "DATA Admin",\n    "uid": "dataadmin",\n    "username": "dataadmin"\n}';});
+
+define('test.env',['angular-mocks', 'text!../../test/fixtures/drugs_1.json', 'text!../../test/fixtures/drugs_2.json', 'text!../../test/fixtures/drug_1.json', 'text!../../test/fixtures/drug_2.json', 'text!../../test/fixtures/drug_3.json', 'text!../../test/fixtures/providers_11.json', 'text!../../test/fixtures/providers_12.json', 'text!../../test/fixtures/providers_2.json', 'text!../../test/fixtures/specialties_A.json', 'text!../../test/fixtures/specialties_B.json', 'text!../../test/fixtures/specialties_C.json', 'text!../../test/fixtures/specialties_D.json', 'text!../../test/fixtures/specialties_E.json', 'text!../../test/fixtures/specialties_F.json', 'text!../../test/fixtures/specialties_S.json', 'text!../../test/fixtures/sumo_profile.json', 'text!../../test/fixtures/businessadmin_profile.json', 'text!../../test/fixtures/itadmin_profile.json', 'text!../../test/fixtures/dataadmin_profile.json', './common/services/EventBus'], function($__0,$__1,$__2,$__3,$__4,$__5,$__6,$__7,$__8,$__9,$__10,$__11,$__12,$__13,$__14,$__15,$__16,$__17,$__18,$__19,$__20) {
+  
+  if (!$__0 || !$__0.__esModule)
+    $__0 = {'default': $__0};
+  if (!$__1 || !$__1.__esModule)
+    $__1 = {'default': $__1};
+  if (!$__2 || !$__2.__esModule)
+    $__2 = {'default': $__2};
+  if (!$__3 || !$__3.__esModule)
+    $__3 = {'default': $__3};
+  if (!$__4 || !$__4.__esModule)
+    $__4 = {'default': $__4};
+  if (!$__5 || !$__5.__esModule)
+    $__5 = {'default': $__5};
+  if (!$__6 || !$__6.__esModule)
+    $__6 = {'default': $__6};
+  if (!$__7 || !$__7.__esModule)
+    $__7 = {'default': $__7};
+  if (!$__8 || !$__8.__esModule)
+    $__8 = {'default': $__8};
+  if (!$__9 || !$__9.__esModule)
+    $__9 = {'default': $__9};
+  if (!$__10 || !$__10.__esModule)
+    $__10 = {'default': $__10};
+  if (!$__11 || !$__11.__esModule)
+    $__11 = {'default': $__11};
+  if (!$__12 || !$__12.__esModule)
+    $__12 = {'default': $__12};
+  if (!$__13 || !$__13.__esModule)
+    $__13 = {'default': $__13};
+  if (!$__14 || !$__14.__esModule)
+    $__14 = {'default': $__14};
+  if (!$__15 || !$__15.__esModule)
+    $__15 = {'default': $__15};
+  if (!$__16 || !$__16.__esModule)
+    $__16 = {'default': $__16};
+  if (!$__17 || !$__17.__esModule)
+    $__17 = {'default': $__17};
+  if (!$__18 || !$__18.__esModule)
+    $__18 = {'default': $__18};
+  if (!$__19 || !$__19.__esModule)
+    $__19 = {'default': $__19};
+  if (!$__20 || !$__20.__esModule)
+    $__20 = {'default': $__20};
+  $__0;
+  $__1;
+  $__2;
+  $__3;
+  $__4;
+  $__5;
+  $__6;
+  $__7;
+  $__8;
+  $__9;
+  $__10;
+  $__11;
+  $__12;
+  $__13;
+  $__14;
+  $__15;
+  $__16;
+  $__17;
+  $__18;
+  $__19;
+  var EBUS_CONFIG = $__20.EBUS_CONFIG;
+  var moduleName = 'spaApp.test.env';
+  var testEnvModule = angular.module(moduleName, ['ngMockE2E']);
+  testEnvModule.config((function() {
+    
+    console.log('in testEnvModule... ');
+    EBUS_CONFIG.BASE_URL = 'http://localhost:8080/apiApp/stomp';
+  }));
+  testEnvModule.run((function($httpBackend) {
+    
+    console.log('in testEnvModule... ');
+    $httpBackend.whenPOST(/\http:\/\/ve7d00000010:8080\/apiApp\/j_spring_security_check/).respond((function(method, url, data, headers) {
+      console.log('Received data', method, url, data, headers);
+      if (data.contains('j_username=sumo&j_password=demo')) {
+        window.username = 'sumo';
+        return [200, {
+          success: true,
+          username: 'sumo'
+        }];
+      } else if (data.contains('j_username=businessadmin&j_password=businessadmin')) {
+        window.username = 'businessadmin';
+        return [200, {
+          success: true,
+          username: 'businessadmin'
+        }];
+      } else if (data.contains('j_username=itadmin&j_password=itadmin')) {
+        window.username = 'itadmin';
+        return [200, {
+          success: true,
+          username: 'itadmin'
+        }];
+      } else if (data.contains('j_username=dataadmin&j_password=dataadmin')) {
+        window.username = 'dataadmin';
+        return [200, {
+          success: true,
+          username: 'dataadmin'
+        }];
+      } else {
+        return [200, {error: 'Sorry, we were not able to find a user with that username and password.'}];
+      }
+    }));
+    $httpBackend.whenGET(/\http:\/\/ve7d00000010:8080\/apiApp\/login\/currentUser/).respond((function(method, url) {
+      console.log('Received URL', url);
+      console.log('window.username', window.username);
+      if (window.username === 'sumo') {
+        return [200, require('text!../../test/fixtures/sumo_profile.json')];
+      } else if (window.username === 'businessadmin') {
+        return [200, require('text!../../test/fixtures/businessadmin_profile.json')];
+      } else if (window.username === 'itadmin') {
+        return [200, require('text!../../test/fixtures/itadmin_profile.json')];
+      } else if (window.username === 'dataadmin') {
+        return [200, require('text!../../test/fixtures/dataadmin_profile.json')];
+      } else {
+        return [200, {error: 'Sorry, we were not able to find a user with that username and password.'}];
+      }
+    }));
+    $httpBackend.whenPOST(/\http:\/\/ve7d00000010:8080\/apiApp\/logout/).respond((function() {
+      window.username = undefined;
+      return [200, {}];
+    }));
+    $httpBackend.whenGET(/\http:\/\/ve7d00000010:8080\/apiApp\/drugs\?fields*/).respond((function(method, url) {
+      console.log('url', url);
+      if (!window.username) {
+        return [401, {message: 'authentication required'}];
+      }
+      if (url.contains('offset=0')) {
+        return [200, require('text!../../test/fixtures/drugs_1.json')];
+      } else if (url.contains('offset=100')) {
+        return [200, require('text!../../test/fixtures/drugs_2.json')];
+      } else {
+        return [200, require('text!../../test/fixtures/drugs_1.json')];
+      }
+    }));
+    $httpBackend.whenGET(/\http:\/\/ve7d00000010:8080\/apiApp\/drugs\/[1-9]*/).respond((function(method, url) {
+      console.log('url', url);
+      if (url.contains('drugs/1')) {
+        return [200, require('text!../../test/fixtures/drug_1.json')];
+      } else if (url.contains('drugs/2')) {
+        return [200, require('text!../../test/fixtures/drug_2.json')];
+      } else if (url.contains('drugs/3')) {
+        return [200, require('text!../../test/fixtures/drug_3.json')];
+      } else {
+        return [200, require('text!../../test/fixtures/drug_1.json')];
+      }
+    }));
+    $httpBackend.whenGET(/http:\/\/ve7d00000179:8080\/REST_HBS_Canonical_Resiliency\/service\/providers\?distance*/).respond((function(method, url) {
+      console.log('url', url);
+      if (url.contains('offset=0')) {
+        return [200, require('text!../../test/fixtures/providers_11.json')];
+      } else if (url.contains('offset=100')) {
+        return [200, require('text!../../test/fixtures/providers_12.json')];
+      } else {
+        return [200, require('text!../../test/fixtures/providers_2.json')];
+      }
+    }));
+    $httpBackend.whenGET(/http:\/\/ve7d00000179:8080\/REST_HBS_Canonical_Resiliency\/service\/providers\/specialties\?prefix*/).respond((function(method, url) {
+      console.log('url', url);
+      if (url.contains('prefix=A')) {
+        return [200, require('text!../../test/fixtures/specialties_A.json')];
+      } else if (url.contains('prefix=B')) {
+        return [200, require('text!../../test/fixtures/specialties_B.json')];
+      } else if (url.contains('prefix=C')) {
+        return [200, require('text!../../test/fixtures/specialties_C.json')];
+      } else if (url.contains('prefix=D')) {
+        return [200, require('text!../../test/fixtures/specialties_D.json')];
+      } else if (url.contains('prefix=E')) {
+        return [200, require('text!../../test/fixtures/specialties_E.json')];
+      } else if (url.contains('prefix=F')) {
+        return [200, require('text!../../test/fixtures/specialties_F.json')];
+      } else {
+        return [200, require('text!../../test/fixtures/specialties_S.json')];
+      }
+    }));
+    $httpBackend.whenGET(/views\/\w+.*/).passThrough();
+    $httpBackend.whenJSONP('http://www.telize.com/geoip?callback=JSON_CALLBACK').passThrough();
+    $httpBackend.whenGET(/^\w+.*/).passThrough();
+    $httpBackend.whenPOST(/^\w+.*/).passThrough();
+  }));
+  var $__default = moduleName;
+  return {
+    get default() {
+      return $__default;
+    },
+    __esModule: true
+  };
+});
 
 angular.module("templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("views/common/footer.html","<div class=\"container\">\n    <p class=\"text-muted credit\" align=\"right\">Copyright Sumo</p>\n</div>");
 $templateCache.put("views/common/header.html","<!-- Fixed navbar -->\n<div ng-class=\"[\'navbar\', \'navbar-default\',\'navbar-fixed-top\']\">\n    <div class=\"container\">\n        <div class=\"navbar-header\">\n            <button type=\"button\" class=\"navbar-toggle\" data-toggle=\"collapse\" data-target=\".navbar-collapse\">\n                <span class=\"icon-bar\"></span>\n                <span class=\"icon-bar\"></span>\n                <span class=\"icon-bar\"></span>\n            </button>\n            <a class=\"navbar-brand\" href=\"#\">Member Portal</a>\n        </div>\n        <div class=\"navbar-collapse collapse\">\n            <ul class=\"nav navbar-nav\">\n                <li ui-sref-active=\"active\"><a ui-sref=\"home\">Home</a></li>\n                <li ng-class=\"{active: $state.includes(\'**.providers.**\')}\"><a ui-sref=\"providers.search\">Providers</a></li>\n                <li ng-class=\"{active: $state.includes(\'**.drugs.**\')}\"><a ui-sref=\"drugs.list\">Drugs</a></li>\n                <li ng-class=\"{active: $state.includes(\'todoMVC\')}\"><a ui-sref=\"todoMVC\">ES6 Todo</a></li>\n                <li class=\"dropdown\">\n                    <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\">Experiments <b class=\"caret\"></b></a>\n                    <ul class=\"dropdown-menu\">\n                        <li class=\"dropdown-header\">Experiments</li>\n                        <li has-permission=\'ROLE_BUSINESS_ADMIN\'><a href=\"#\">Enabled for BA</a></li>\n                        <li><a ui-sref=\"testAuth\">Test Auth</a></li>\n                        <li><a ui-sref=\"elements\">Elements</a></li>\n                        <li class=\"divider\"></li>\n                        <li class=\"dropdown-header\">Dev Experiments</li>\n                        <li><a ui-sref=\"slow\">Slow Test</a></li>\n                        <li><a ui-sref=\"messaging\">Messaging</a></li>\n                        <li><a ui-sref=\"terminal({containerId: 123})\">Terminal</a></li>\n                        <li><a ui-sref=\"experiments\">Experiments</a></li>\n                        <li has-permission=\'ROLE_IT_ADMIN\'><a  tabindex=\"-1\" ui-sref=\"home\">Enabled for IA</a></li>\n                        <li><a  ui-sref=\"translations\">Translations</a></li>\n\n                    </ul>\n                </li>\n            </ul>\n            <ul class=\"nav navbar-nav navbar-right\" ng-controller=\"LoginController as lc\" ng-switch on=\"lc.isLoggedIn()\">\n                <li><a ui-sref=\"about\">About</a></li>\n                <li><a  ui-sref=\"contact\">Contact</a></li>\n\n                <li class=\"dropdown\" ng-switch-when=\"true\">\n                    <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\">{{lc.getUsername() | uppercase}} <b class=\"caret\"></b></a>\n                    <ul class=\"dropdown-menu\">\n                        <li><a ui-sref=\"settings\">Settings</a></li>\n                        <li><a ng-click=\"lc.logout()\">Logout</a></li>\n                    </ul>\n                </li>\n                <li ng-switch-default><a  ng-click=\"lc.login()\">Login</a></li>\n\n            </ul>\n        </div><!--/.nav-collapse -->\n    </div>\n</div>");

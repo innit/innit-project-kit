@@ -111,6 +111,7 @@ text!../../test/fixtures/sumo_profile.json
 text!../../test/fixtures/businessadmin_profile.json
 text!../../test/fixtures/itadmin_profile.json
 text!../../test/fixtures/dataadmin_profile.json
+scripts/test.env.js
 scripts/templates.js
 scripts/index.js
 scripts/bootstrap.js
