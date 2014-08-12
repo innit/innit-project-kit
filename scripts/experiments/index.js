@@ -1607,11 +1607,19 @@ define('experiments/controllers/MessagingController',[], function() {
       if (this.selectedUser === 'All') {
         this[$traceurRuntime.toProperty(_eventBus)].publish('/app/chat/messages', newMessage);
       } else {
-        this.messages.push({
-          message: ("[ >> " + this.selectedUser + "]: " + newMessage),
-          private: true
-        });
-        this[$traceurRuntime.toProperty(_eventBus)].publish(("/user/" + this.selectedUser + "/queue/chat/messages"), '[' + this[$traceurRuntime.toProperty(_eventBus)].getUser() + ']: ' + newMessage);
+        try {
+          throw undefined;
+        } catch (msg) {
+          {
+            this.messages.push({
+              message: ("[ >> " + this.selectedUser + "]: " + newMessage),
+              private: true
+            });
+            console.error('xxxxxxxxxxxxxx..............', this[$traceurRuntime.toProperty(_eventBus)].getUser());
+            msg = '[' + this[$traceurRuntime.toProperty(_eventBus)].getUser() + ']: ' + newMessage;
+            this[$traceurRuntime.toProperty(_eventBus)].publish(("/user/" + this.selectedUser + "/queue/chat/messages"), msg);
+          }
+        }
       }
       this.newMessage = '';
     }
