@@ -8045,10 +8045,11 @@ define('common/services/EventBus',['sockjs', 'stomp', '../utils/Enum', '../../re
       }));
     },
     _resubscribe: function() {
+      var $__6 = this;
       var myHandlers = this[$traceurRuntime.toProperty(handlers)];
-      myHandlers.forEach(function(value, key, myHandlers) {
-        this[$traceurRuntime.toProperty(subscriptions)].set(key, this.stompClient.subscribe(key, value));
-      });
+      myHandlers.forEach((function(callback, address, myHandlers) {
+        $__6[$traceurRuntime.toProperty(subscriptions)].set(address, $__6.stompClient.subscribe(address, callback));
+      }));
     },
     registerHandler: function(address, callback) {
       this[$traceurRuntime.toProperty(handlers)].set(address, callback);
