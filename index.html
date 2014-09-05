@@ -1,0 +1,34 @@
+<!doctype html>
+<html class="no-js">
+    <head xmlns:ng="http://angularjs.org/">
+        <meta charset="utf-8">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Member Portal</title>
+        <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+
+        <link rel="stylesheet" href="styles/vendor.css">
+
+        <link rel="stylesheet" href="styles/main.css">
+
+    </head>
+    <body>
+        <!--[if lt IE 10]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+        <header id="header" ng-include src="'views/common/header.html'"></header>
+        <div growl></div>
+        <div id="spinner" ng-show="spinner" class="spinner center"></div>
+
+        <!--Page content should go in views/**/*.html-->
+        <ui-view class="slide-reveal" autoscroll="false">Loading ...</ui-view>
+
+        <footer id="footer" ng-include src="'views/common/footer.html'"></footer>
+
+        <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+        
+
+        <script src="scripts/bootstrap.js" data-main="scripts/bootstrap"></script>
+    </body>
+</html>

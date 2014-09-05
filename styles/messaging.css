@@ -1,0 +1,100 @@
+body {
+  -webkit-backface-visibility: hidden;
+}
+
+.led {
+  margin: 0 5px;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.25);
+  box-shadow: #000 0 -1px 6px 1px;
+}
+
+.led-red {
+  background-color: #F00;
+  box-shadow: #000 0 -1px 6px 1px, inset #600 0 -1px 8px, #F00 0 3px 11px;
+}
+
+.led-orange {
+  background-color: #FF7000;
+  box-shadow: #000 0 -1px 6px 1px, inset #630 0 -1px 8px, #FF7000 0 3px 11px;
+}
+
+.led-yellow {
+  background-color: #FF0;
+  box-shadow: #000 0 -1px 6px 1px, inset #660 0 -1px 8px, #FF0 0 3px 11px;
+}
+
+.led-green {
+  background-color: #80FF00;
+  box-shadow: #000 0 -1px 6px 1px, inset #460 0 -1px 8px, #80FF00 0 3px 11px;
+}
+
+.led-blue {
+  background-color: #06F;
+  box-shadow: #000 0 -1px 6px 1px, inset #006 0 -1px 8px, #06F 0 3px 11px;
+}
+
+.led-yellow-blink {
+  -webkit-animation: blink_yellow 1000ms ease 0.2s infinite both;
+  animation: blink_yellow 1000ms ease 0.2s infinite both;
+  -webkit-animation-backface-visibility: hidden;
+  -moz-animation-backface-visibility: hidden;
+  -ms-animation-backface-visibility: hidden;
+  -o-animation-backface-visibility: hidden;
+  animation-backface-visibility: hidden;
+}
+@-webkit-keyframes blink_yellow {
+  0% {
+    background-color: yellow;
+    box-shadow: #000 0 -1px 6px 1px, inset #666600 0 -1px 8px, yellow 0 3px 11px;
+  }
+  50% {
+    background-color: rgba(255, 255, 255, 0.25);
+    box-shadow: #000 0 -1px 6px 1px;
+  }
+  100% {
+    background-color: yellow;
+    box-shadow: #000 0 -1px 6px 1px, inset #666600 0 -1px 8px, yellow 0 3px 11px;
+  }
+}
+@keyframes blink_yellow {
+  0% {
+    background-color: yellow;
+    box-shadow: #000 0 -1px 6px 1px, inset #666600 0 -1px 8px, yellow 0 3px 11px;
+  }
+  50% {
+    background-color: rgba(255, 255, 255, 0.25);
+    box-shadow: #000 0 -1px 6px 1px;
+  }
+  100% {
+    background-color: yellow;
+    box-shadow: #000 0 -1px 6px 1px, inset #666600 0 -1px 8px, yellow 0 3px 11px;
+  }
+}
+.change {
+  -webkit-transition: 1s linear all;
+  transition: 1s linear all;
+  background-color: clear;
+}
+
+.panel-dark {
+  border-color: #384047;
+}
+.panel-dark > .panel-heading {
+  color: #fff;
+  background-color: #384047;
+  border-color: #384047;
+}
+.panel-dark > .panel-heading + .panel-collapse > .panel-body {
+  border-top-color: #384047;
+}
+.panel-dark > .panel-heading .badge {
+  color: #384047;
+  background-color: #fff;
+}
+.panel-dark > .panel-footer + .panel-collapse > .panel-body {
+  border-bottom-color: #384047;
+}
