@@ -19,6 +19,7 @@ define('home/routes',[], function() {
   };
 });
 
+//# sourceMappingURL=../home/routes.js.map;
 define('home/controllers/HomeController',[], function() {
   
   var HomeController = function HomeController($scope) {
@@ -34,12 +35,13 @@ define('home/controllers/HomeController',[], function() {
   };
 });
 
+//# sourceMappingURL=../../home/controllers/HomeController.js.map;
 define('home/index',['./routes', './controllers/HomeController'], function($__0,$__2) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   var routes = $__0.default;
   var HomeController = $__2.default;
   var moduleName = 'spaApp.home';
@@ -55,3 +57,4 @@ define('home/index',['./routes', './controllers/HomeController'], function($__0,
   };
 });
 
+//# sourceMappingURL=../home/index.js.map;

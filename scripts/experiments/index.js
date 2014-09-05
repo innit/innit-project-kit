@@ -65,6 +65,230 @@ define('experiments/routes',[], function() {
   };
 });
 
+//# sourceMappingURL=../experiments/routes.js.map;
+define('assert',[], function() {
+  
+  var POSITION_NAME = ['', '1st', '2nd', '3rd'];
+  function argPositionName(i) {
+    var position = (i / 2) + 1;
+    return POSITION_NAME[position] || (position + 'th');
+  }
+  var primitives = $traceurRuntime.type;
+  function assertArgumentTypes() {
+    for (var params = [],
+        $__2 = 0; $__2 < arguments.length; $__2++)
+      params[$__2] = arguments[$__2];
+    var actual,
+        type;
+    var currentArgErrors;
+    var errors = [];
+    var msg;
+    for (var i = 0,
+        l = params.length; i < l; i = i + 2) {
+      actual = params[i];
+      type = params[i + 1];
+      currentArgErrors = [];
+      if (!isType(actual, type, currentArgErrors)) {
+        errors.push(argPositionName(i) + ' argument has to be an instance of ' + prettyPrint(type) + ', got ' + prettyPrint(actual));
+        if (currentArgErrors.length) {
+          errors.push(currentArgErrors);
+        }
+      }
+    }
+    if (errors.length) {
+      throw new Error('Invalid arguments given!\n' + formatErrors(errors));
+    }
+  }
+  function prettyPrint(value) {
+    if (typeof value === 'undefined') {
+      return 'undefined';
+    }
+    if (typeof value === 'string') {
+      return '"' + value + '"';
+    }
+    if (typeof value === 'boolean') {
+      return value.toString();
+    }
+    if (value === null) {
+      return 'null';
+    }
+    if (typeof value === 'object') {
+      if (value.map) {
+        return '[' + value.map(prettyPrint).join(', ') + ']';
+      }
+      var properties = Object.keys(value);
+      return '{' + properties.map((function(p) {
+        return p + ': ' + prettyPrint(value[p]);
+      })).join(', ') + '}';
+    }
+    return value.__assertName || value.name || value.toString();
+  }
+  function isType(value, T, errors) {
+    if (typeof value === 'undefined') {
+      return true;
+    }
+    if (T === primitives.void) {
+      return typeof value === 'undefined';
+    }
+    if (T === primitives.any || value === null) {
+      return true;
+    }
+    if (T === primitives.string) {
+      return typeof value === 'string';
+    }
+    if (T === primitives.number) {
+      return typeof value === 'number';
+    }
+    if (T === primitives.boolean) {
+      return typeof value === 'boolean';
+    }
+    if (typeof T.assert === 'function') {
+      var parentStack = currentStack;
+      var isValid;
+      currentStack = errors;
+      try {
+        isValid = T.assert(value);
+      } catch (e) {
+        fail(e.message);
+        isValid = false;
+      }
+      currentStack = parentStack;
+      if (typeof isValid === 'undefined') {
+        isValid = errors.length === 0;
+      }
+      return isValid;
+    }
+    return value instanceof T;
+  }
+  function formatErrors(errors) {
+    var indent = arguments[1] !== (void 0) ? arguments[1] : '  ';
+    return errors.map((function(e) {
+      if (typeof e === 'string')
+        return indent + '- ' + e;
+      return formatErrors(e, indent + '  ');
+    })).join('\n');
+  }
+  function type(actual, T) {
+    var errors = [];
+    if (!isType(actual, T, errors)) {
+      var msg = 'Expected an instance of ' + prettyPrint(T) + ', got ' + prettyPrint(actual) + '!';
+      if (errors.length) {
+        msg += '\n' + formatErrors(errors);
+      }
+      throw new Error(msg);
+    }
+  }
+  function returnType(actual, T) {
+    var errors = [];
+    if (!isType(actual, T, errors)) {
+      var msg = 'Expected to return an instance of ' + prettyPrint(T) + ', got ' + prettyPrint(actual) + '!';
+      if (errors.length) {
+        msg += '\n' + formatErrors(errors);
+      }
+      throw new Error(msg);
+    }
+    return actual;
+  }
+  var string = define('string', function(value) {
+    return typeof value === 'string';
+  });
+  var boolean = define('boolean', function(value) {
+    return typeof value === 'boolean';
+  });
+  var number = define('number', function(value) {
+    return typeof value === 'number';
+  });
+  function arrayOf() {
+    for (var types = [],
+        $__3 = 0; $__3 < arguments.length; $__3++)
+      types[$__3] = arguments[$__3];
+    return assert.define('array of ' + types.map(prettyPrint).join('/'), function(value) {
+      var $__5;
+      if (assert(value).is(Array)) {
+        for (var $__0 = value[Symbol.iterator](),
+            $__1; !($__1 = $__0.next()).done; ) {
+          var item = $__1.value;
+          {
+            ($__5 = assert(item)).is.apply($__5, $traceurRuntime.spread(types));
+          }
+        }
+      }
+    });
+  }
+  function structure(definition) {
+    var properties = Object.keys(definition);
+    return assert.define('object with properties ' + properties.join(', '), function(value) {
+      if (assert(value).is(Object)) {
+        for (var $__0 = properties[Symbol.iterator](),
+            $__1; !($__1 = $__0.next()).done; ) {
+          var property = $__1.value;
+          {
+            assert(value[property]).is(definition[property]);
+          }
+        }
+      }
+    });
+  }
+  var currentStack = [];
+  function fail(message) {
+    currentStack.push(message);
+  }
+  function define(classOrName, check) {
+    var cls = classOrName;
+    if (typeof classOrName === 'string') {
+      cls = function() {};
+      cls.__assertName = classOrName;
+    }
+    cls.assert = function(value) {
+      return check(value);
+    };
+    return cls;
+  }
+  function assert(value) {
+    return {is: function is() {
+        var $__5;
+        for (var types = [],
+            $__4 = 0; $__4 < arguments.length; $__4++)
+          types[$__4] = arguments[$__4];
+        var allErrors = [];
+        var errors;
+        for (var $__0 = types[Symbol.iterator](),
+            $__1; !($__1 = $__0.next()).done; ) {
+          var type = $__1.value;
+          {
+            errors = [];
+            if (isType(value, type, errors)) {
+              return true;
+            }
+            allErrors.push(prettyPrint(value) + ' is not instance of ' + prettyPrint(type));
+            if (errors.length) {
+              allErrors.push(errors);
+            }
+          }
+        }
+        ($__5 = currentStack).push.apply($__5, $traceurRuntime.spread(allErrors));
+        return false;
+      }};
+  }
+  assert.type = type;
+  assert.argumentTypes = assertArgumentTypes;
+  assert.returnType = returnType;
+  assert.define = define;
+  assert.fail = fail;
+  assert.string = string;
+  assert.number = number;
+  assert.boolean = boolean;
+  assert.arrayOf = arrayOf;
+  assert.structure = structure;
+  ;
+  return {
+    get assert() {
+      return assert;
+    },
+    __esModule: true
+  };
+});
+
 define('diary/diary',[], function() {
   
   var Diary = function Diary(group) {
@@ -76,7 +300,7 @@ define('diary/diary',[], function() {
           $__2; !($__2 = $__1.next()).done; ) {
         var target = $__2.value;
         {
-          var $__3 = $traceurRuntime.assertObject(target),
+          var $__3 = target,
               config = $__3.config,
               reporter = $__3.reporter;
           if ((config.level.indexOf('*') !== -1 || config.level.indexOf(level) !== -1) && (config.group.indexOf('*') !== -1 || config.group.indexOf(group) !== -1)) {
@@ -130,11 +354,14 @@ define('diary/diary',[], function() {
   };
 });
 
-define('experiments/services/EmailService',['diary/diary'], function($__0) {
+define('experiments/services/EmailService',["assert", 'diary/diary'], function($__0,$__2) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
-  var Diary = $__0.Diary;
+    $__0 = {default: $__0};
+  if (!$__2 || !$__2.__esModule)
+    $__2 = {default: $__2};
+  var assert = $__0.assert;
+  var Diary = $__2.Diary;
   var EmailService = function EmailService() {
     this.logger = Diary.logger('EmailService');
     this.logger.info('in EmailService....');
@@ -169,17 +396,19 @@ define('experiments/services/EmailService',['diary/diary'], function($__0) {
       }, this);
     },
     timeout: function(ms) {
-      return new Promise((function(resolve) {
+      return assert.returnType((new Promise((function(resolve) {
         setTimeout(resolve, ms);
-      }));
+      }))), Promise);
     }
   }, {
     format: function() {
       var name = arguments[0] !== (void 0) ? arguments[0] : "Anonymous";
-      return name.toUpperCase();
+      assert.argumentTypes(name, $traceurRuntime.type.string);
+      return assert.returnType((name.toUpperCase()), $traceurRuntime.type.string);
     },
     add: function(a, b) {
-      return a + b;
+      assert.argumentTypes(a, $traceurRuntime.type.number, b, $traceurRuntime.type.number);
+      return assert.returnType((a + b), $traceurRuntime.type.number);
     }
   });
   var $__default = EmailService;
@@ -193,6 +422,7 @@ define('experiments/services/EmailService',['diary/diary'], function($__0) {
   };
 });
 
+//# sourceMappingURL=../../experiments/services/EmailService.js.map;
 define('di/util',[], function() {
   
   function isUpperCase(char) {
@@ -246,7 +476,7 @@ define('di/util',[], function() {
 define('di/annotations',['./util'], function($__0) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   var isFunction = $__0.isFunction;
   var SuperConstructor = function SuperConstructor() {};
   ($traceurRuntime.createClass)(SuperConstructor, {}, {});
@@ -322,12 +552,12 @@ define('di/annotations',['./util'], function($__0) {
         var annotation = $__4.value;
         {
           if (annotation instanceof Inject) {
-            collectedAnnotations.params = annotation.tokens.map((function(token) {
-              return {
+            annotation.tokens.forEach((function(token) {
+              collectedAnnotations.params.push({
                 token: token,
                 isPromise: annotation.isPromise,
                 isLazy: annotation.isLazy
-              };
+              });
             }));
           }
           if (annotation instanceof Provide) {
@@ -401,7 +631,7 @@ define('di/annotations',['./util'], function($__0) {
 define('di/profiler',['./util'], function($__0) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   var toString = $__0.toString;
   var IS_DEBUG = false;
   var _global = null;
@@ -478,9 +708,9 @@ define('di/profiler',['./util'], function($__0) {
 define('di/providers',['./annotations', './util'], function($__0,$__2) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   var $__1 = $__0,
       SuperConstructorAnnotation = $__1.SuperConstructor,
       readAnnotations = $__1.readAnnotations;
@@ -578,13 +808,13 @@ define('di/providers',['./annotations', './util'], function($__0,$__2) {
 define('di/injector',['./annotations', './util', './profiler', './providers'], function($__0,$__2,$__4,$__6) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   if (!$__4 || !$__4.__esModule)
-    $__4 = {'default': $__4};
+    $__4 = {default: $__4};
   if (!$__6 || !$__6.__esModule)
-    $__6 = {'default': $__6};
+    $__6 = {default: $__6};
   var $__1 = $__0,
       annotate = $__1.annotate,
       readAnnotations = $__1.readAnnotations,
@@ -820,9 +1050,9 @@ define('di/injector',['./annotations', './util', './profiler', './providers'], f
 define('di/index',['./injector', './annotations'], function($__0,$__1) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__1 || !$__1.__esModule)
-    $__1 = {'default': $__1};
+    $__1 = {default: $__1};
   var $__injector__ = $__0;
   var $__annotations__ = $__1;
   return {
@@ -881,10 +1111,11 @@ define('experiments/models/TodoItem',[], function() {
   };
 });
 
+//# sourceMappingURL=../../experiments/models/TodoItem.js.map;
 define('common/utils/Generators',['di/index'], function($__0) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   
   var $__1 = $__0,
       Provide = $__1.Provide,
@@ -1101,16 +1332,17 @@ define('common/utils/Generators',['di/index'], function($__0) {
   };
 });
 
+//# sourceMappingURL=../../common/utils/Generators.js.map;
 define('experiments/models/TodoList',['./TodoItem', '../../common/utils/Generators', 'di/index', 'diary/diary'], function($__0,$__2,$__4,$__6) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   if (!$__4 || !$__4.__esModule)
-    $__4 = {'default': $__4};
+    $__4 = {default: $__4};
   if (!$__6 || !$__6.__esModule)
-    $__6 = {'default': $__6};
+    $__6 = {default: $__6};
   var Todo = $__0.default;
   var Generators = $__2.Generators;
   var Inject = $__4.Inject;
@@ -1211,10 +1443,11 @@ define('experiments/models/TodoList',['./TodoItem', '../../common/utils/Generato
   };
 });
 
+//# sourceMappingURL=../../experiments/models/TodoList.js.map;
 define('common/utils/generators',['di/index'], function($__0) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   
   var $__1 = $__0,
       Provide = $__1.Provide,
@@ -1431,14 +1664,15 @@ define('common/utils/generators',['di/index'], function($__0) {
   };
 });
 
+//# sourceMappingURL=../../common/utils/Generators.js.map;
 define('experiments/controllers/TodoController',['di/index', '../models/TodoList', '../../common/utils/generators'], function($__0,$__2,$__4) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   if (!$__4 || !$__4.__esModule)
-    $__4 = {'default': $__4};
+    $__4 = {default: $__4};
   var Injector = $__0.Injector;
   var TodoList = $__2.default;
   var Generators = $__4.Generators;
@@ -1481,6 +1715,7 @@ define('experiments/controllers/TodoController',['di/index', '../models/TodoList
   };
 });
 
+//# sourceMappingURL=../../experiments/controllers/TodoController.js.map;
 define('experiments/controllers/MessagingController',[], function() {
   
   var _scope = Symbol('scope');
@@ -1625,6 +1860,7 @@ define('experiments/controllers/MessagingController',[], function() {
   };
 });
 
+//# sourceMappingURL=../../experiments/controllers/MessagingController.js.map;
 /* SockJS client, version 0.3.4, http://sockjs.org, MIT License
 
 Copyright (c) 2011-2012 VMware, Inc.
@@ -10258,15 +10494,15 @@ define("term", function(){});
 define('experiments/controllers/TerminalController',['sockjs', 'stomp', 'term'], function($__0,$__1,$__2) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__1 || !$__1.__esModule)
-    $__1 = {'default': $__1};
+    $__1 = {default: $__1};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   $__0;
   $__1;
   $__2;
-  var TerminalController = function TerminalController($scope, $eventBus) {
+  var TerminalController = function TerminalController($scope, $stateParams, $eventBus) {
     var $__3 = this;
     this.term = new Terminal({
       cols: 150,
@@ -10282,7 +10518,7 @@ define('experiments/controllers/TerminalController',['sockjs', 'stomp', 'term'],
     this.term.open(divTerminal);
     this.term.write('\x1b[31mWelcome to term.js!\x1b[m\r\n');
     this.term.on('data', (function(data) {
-      $eventBus.publish('/app/terminal/input', data);
+      $eventBus.publish(("/app/terminal/input/" + $stateParams.containerId), data);
     }));
     var onLogMessage = (function(log) {
       $__3.term.write(JSON.parse(log.body) + '\r\n');
@@ -10295,7 +10531,7 @@ define('experiments/controllers/TerminalController',['sockjs', 'stomp', 'term'],
     });
     $eventBus.registerHandler('/topic/terminal/log', onLogMessage);
     $eventBus.registerHandler('/topic/terminal/error', onLogError);
-    $eventBus.registerHandler('/user/queue/terminal/input', onKeyStroke);
+    $eventBus.registerHandler(("/user/queue/terminal/input/" + $stateParams.containerId), onKeyStroke);
     $scope.$on('$destroy', (function() {
       $eventBus.unregisterHandler('/topic/terminal/log');
       $eventBus.unregisterHandler('/topic/terminal/error');
@@ -10313,6 +10549,7 @@ define('experiments/controllers/TerminalController',['sockjs', 'stomp', 'term'],
   };
 });
 
+//# sourceMappingURL=../../experiments/controllers/TerminalController.js.map;
 define('experiments/services/PrimeGenerator',[], function() {
   
   
@@ -10444,12 +10681,13 @@ define('experiments/services/PrimeGenerator',[], function() {
   };
 });
 
+//# sourceMappingURL=../../experiments/services/PrimeGenerator.js.map;
 define('experiments/controllers/ExperimentController',['diary/diary', '../services/PrimeGenerator'], function($__0,$__2) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   var Diary = $__0.Diary;
   var $__3 = $__2,
       take = $__3.take,
@@ -10509,6 +10747,7 @@ define('experiments/controllers/ExperimentController',['diary/diary', '../servic
   };
 });
 
+//# sourceMappingURL=../../experiments/controllers/ExperimentController.js.map;
 define('experiments/controllers/ElementsController',[], function() {
   
   var ElementsController = function ElementsController($scope) {
@@ -10569,10 +10808,11 @@ define('experiments/controllers/ElementsController',[], function() {
   };
 });
 
+//# sourceMappingURL=../../experiments/controllers/ElementsController.js.map;
 define('experiments/controllers/GrowlTranslateDemoController',['diary/diary'], function($__0) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   var Diary = $__0.Diary;
   var GrowlTranslateDemoController = function GrowlTranslateDemoController($scope, growl, $translate, AuthorizationService) {
     var $__2 = this;
@@ -10611,6 +10851,7 @@ define('experiments/controllers/GrowlTranslateDemoController',['diary/diary'], f
   };
 });
 
+//# sourceMappingURL=../../experiments/controllers/GrowlTranslateDemoController.js.map;
 define('common/utils/util',[], function() {
   
   
@@ -10690,12 +10931,13 @@ define('common/utils/util',[], function() {
   };
 });
 
+//# sourceMappingURL=../../common/utils/util.js.map;
 define('experiments/elements/myElement/MyElement',['../../../common/utils/util', 'diary/diary'], function($__0,$__2) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   var $__1 = $__0,
       loadDOMFromString = $__1.loadDOMFromString,
       loadDOMFromLink = $__1.loadDOMFromLink;
@@ -10767,6 +11009,7 @@ define('experiments/elements/myElement/MyElement',['../../../common/utils/util',
   };
 });
 
+//# sourceMappingURL=../../../experiments/elements/myElement/MyElement.js.map;
 define('experiments/elements/customButton/CustomButton',[], function() {
   
   var CustomButtonPrototype = Object.create(HTMLButtonElement.prototype);
@@ -10786,10 +11029,11 @@ define('experiments/elements/customButton/CustomButton',[], function() {
   };
 });
 
+//# sourceMappingURL=../../../experiments/elements/customButton/CustomButton.js.map;
 define('experiments/elements/myNews/MyNews',['../../../common/utils/util'], function($__0) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   var $__1 = $__0,
       loadDOMFromString = $__1.loadDOMFromString,
       loadDOMFromLink = $__1.loadDOMFromLink;
@@ -10819,6 +11063,7 @@ define('experiments/elements/myNews/MyNews',['../../../common/utils/util'], func
   };
 });
 
+//# sourceMappingURL=../../../experiments/elements/myNews/MyNews.js.map;
 define('experiments/elements/highlighter',[], function() {
   
   
@@ -10857,32 +11102,33 @@ define('experiments/elements/highlighter',[], function() {
   };
 });
 
+//# sourceMappingURL=../../experiments/elements/highlighter.js.map;
 define('experiments/index',['./routes', './services/EmailService', './controllers/TodoController', './controllers/MessagingController', './controllers/TerminalController', './controllers/ExperimentController', './controllers/ElementsController', './controllers/GrowlTranslateDemoController', './elements/myElement/MyElement', './elements/customButton/CustomButton', './elements/myNews/MyNews', './elements/highlighter'], function($__0,$__2,$__4,$__6,$__8,$__10,$__12,$__14,$__16,$__18,$__20,$__22) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   if (!$__4 || !$__4.__esModule)
-    $__4 = {'default': $__4};
+    $__4 = {default: $__4};
   if (!$__6 || !$__6.__esModule)
-    $__6 = {'default': $__6};
+    $__6 = {default: $__6};
   if (!$__8 || !$__8.__esModule)
-    $__8 = {'default': $__8};
+    $__8 = {default: $__8};
   if (!$__10 || !$__10.__esModule)
-    $__10 = {'default': $__10};
+    $__10 = {default: $__10};
   if (!$__12 || !$__12.__esModule)
-    $__12 = {'default': $__12};
+    $__12 = {default: $__12};
   if (!$__14 || !$__14.__esModule)
-    $__14 = {'default': $__14};
+    $__14 = {default: $__14};
   if (!$__16 || !$__16.__esModule)
-    $__16 = {'default': $__16};
+    $__16 = {default: $__16};
   if (!$__18 || !$__18.__esModule)
-    $__18 = {'default': $__18};
+    $__18 = {default: $__18};
   if (!$__20 || !$__20.__esModule)
-    $__20 = {'default': $__20};
+    $__20 = {default: $__20};
   if (!$__22 || !$__22.__esModule)
-    $__22 = {'default': $__22};
+    $__22 = {default: $__22};
   var routes = $__0.default;
   var EmailService = $__2.default;
   var TodoController = $__4.default;
@@ -10920,3 +11166,4 @@ define('experiments/index',['./routes', './services/EmailService', './controller
   };
 });
 
+//# sourceMappingURL=../experiments/index.js.map;

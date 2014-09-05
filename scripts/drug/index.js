@@ -75,6 +75,7 @@ define('drug/routes',[], function() {
   };
 });
 
+//# sourceMappingURL=../drug/routes.js.map;
 define('drug/services/DrugService',[], function() {
   
   var DRUG_SEARCH_CONFIG = {BASE_API_URL: 'http://localhost:8080/<YourBaaS>/DrugSearchAPI'};
@@ -177,10 +178,11 @@ define('drug/services/DrugService',[], function() {
   };
 });
 
+//# sourceMappingURL=../../drug/services/DrugService.js.map;
 define('drug/controllers/DrugSearchController',['../services/DrugService'], function($__0) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   var $__1 = $__0,
       DRUG_LIST_PARAMS = $__1.DRUG_LIST_PARAMS,
       DRUG_SEARCH_PARAMS = $__1.DRUG_SEARCH_PARAMS;
@@ -221,6 +223,7 @@ define('drug/controllers/DrugSearchController',['../services/DrugService'], func
   };
 });
 
+//# sourceMappingURL=../../drug/controllers/DrugSearchController.js.map;
 define('drug/controllers/DrugResultsController',[], function() {
   
   var DrugResultsController = function DrugResultsController($scope, growl, drugs, $filter, ngTableParams) {
@@ -250,6 +253,7 @@ define('drug/controllers/DrugResultsController',[], function() {
   };
 });
 
+//# sourceMappingURL=../../drug/controllers/DrugResultsController.js.map;
 define('drug/controllers/DrugDetailController',[], function() {
   
   var DrugDetailController = function DrugDetailController($scope, drug) {
@@ -265,18 +269,19 @@ define('drug/controllers/DrugDetailController',[], function() {
   };
 });
 
+//# sourceMappingURL=../../drug/controllers/DrugDetailController.js.map;
 define('drug/index',['./routes', './controllers/DrugSearchController', './controllers/DrugResultsController', './controllers/DrugDetailController', './services/DrugService'], function($__0,$__2,$__4,$__6,$__8) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   if (!$__4 || !$__4.__esModule)
-    $__4 = {'default': $__4};
+    $__4 = {default: $__4};
   if (!$__6 || !$__6.__esModule)
-    $__6 = {'default': $__6};
+    $__6 = {default: $__6};
   if (!$__8 || !$__8.__esModule)
-    $__8 = {'default': $__8};
+    $__8 = {default: $__8};
   var routes = $__0.default;
   var DrugSearchController = $__2.default;
   var DrugResultsController = $__4.default;
@@ -306,3 +311,4 @@ define('drug/index',['./routes', './controllers/DrugSearchController', './contro
   };
 });
 
+//# sourceMappingURL=../drug/index.js.map;

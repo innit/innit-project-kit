@@ -23,6 +23,230 @@ define('common/routes',[], function() {
   };
 });
 
+//# sourceMappingURL=../common/routes.js.map;
+define('assert',[], function() {
+  
+  var POSITION_NAME = ['', '1st', '2nd', '3rd'];
+  function argPositionName(i) {
+    var position = (i / 2) + 1;
+    return POSITION_NAME[position] || (position + 'th');
+  }
+  var primitives = $traceurRuntime.type;
+  function assertArgumentTypes() {
+    for (var params = [],
+        $__2 = 0; $__2 < arguments.length; $__2++)
+      params[$__2] = arguments[$__2];
+    var actual,
+        type;
+    var currentArgErrors;
+    var errors = [];
+    var msg;
+    for (var i = 0,
+        l = params.length; i < l; i = i + 2) {
+      actual = params[i];
+      type = params[i + 1];
+      currentArgErrors = [];
+      if (!isType(actual, type, currentArgErrors)) {
+        errors.push(argPositionName(i) + ' argument has to be an instance of ' + prettyPrint(type) + ', got ' + prettyPrint(actual));
+        if (currentArgErrors.length) {
+          errors.push(currentArgErrors);
+        }
+      }
+    }
+    if (errors.length) {
+      throw new Error('Invalid arguments given!\n' + formatErrors(errors));
+    }
+  }
+  function prettyPrint(value) {
+    if (typeof value === 'undefined') {
+      return 'undefined';
+    }
+    if (typeof value === 'string') {
+      return '"' + value + '"';
+    }
+    if (typeof value === 'boolean') {
+      return value.toString();
+    }
+    if (value === null) {
+      return 'null';
+    }
+    if (typeof value === 'object') {
+      if (value.map) {
+        return '[' + value.map(prettyPrint).join(', ') + ']';
+      }
+      var properties = Object.keys(value);
+      return '{' + properties.map((function(p) {
+        return p + ': ' + prettyPrint(value[p]);
+      })).join(', ') + '}';
+    }
+    return value.__assertName || value.name || value.toString();
+  }
+  function isType(value, T, errors) {
+    if (typeof value === 'undefined') {
+      return true;
+    }
+    if (T === primitives.void) {
+      return typeof value === 'undefined';
+    }
+    if (T === primitives.any || value === null) {
+      return true;
+    }
+    if (T === primitives.string) {
+      return typeof value === 'string';
+    }
+    if (T === primitives.number) {
+      return typeof value === 'number';
+    }
+    if (T === primitives.boolean) {
+      return typeof value === 'boolean';
+    }
+    if (typeof T.assert === 'function') {
+      var parentStack = currentStack;
+      var isValid;
+      currentStack = errors;
+      try {
+        isValid = T.assert(value);
+      } catch (e) {
+        fail(e.message);
+        isValid = false;
+      }
+      currentStack = parentStack;
+      if (typeof isValid === 'undefined') {
+        isValid = errors.length === 0;
+      }
+      return isValid;
+    }
+    return value instanceof T;
+  }
+  function formatErrors(errors) {
+    var indent = arguments[1] !== (void 0) ? arguments[1] : '  ';
+    return errors.map((function(e) {
+      if (typeof e === 'string')
+        return indent + '- ' + e;
+      return formatErrors(e, indent + '  ');
+    })).join('\n');
+  }
+  function type(actual, T) {
+    var errors = [];
+    if (!isType(actual, T, errors)) {
+      var msg = 'Expected an instance of ' + prettyPrint(T) + ', got ' + prettyPrint(actual) + '!';
+      if (errors.length) {
+        msg += '\n' + formatErrors(errors);
+      }
+      throw new Error(msg);
+    }
+  }
+  function returnType(actual, T) {
+    var errors = [];
+    if (!isType(actual, T, errors)) {
+      var msg = 'Expected to return an instance of ' + prettyPrint(T) + ', got ' + prettyPrint(actual) + '!';
+      if (errors.length) {
+        msg += '\n' + formatErrors(errors);
+      }
+      throw new Error(msg);
+    }
+    return actual;
+  }
+  var string = define('string', function(value) {
+    return typeof value === 'string';
+  });
+  var boolean = define('boolean', function(value) {
+    return typeof value === 'boolean';
+  });
+  var number = define('number', function(value) {
+    return typeof value === 'number';
+  });
+  function arrayOf() {
+    for (var types = [],
+        $__3 = 0; $__3 < arguments.length; $__3++)
+      types[$__3] = arguments[$__3];
+    return assert.define('array of ' + types.map(prettyPrint).join('/'), function(value) {
+      var $__5;
+      if (assert(value).is(Array)) {
+        for (var $__0 = value[Symbol.iterator](),
+            $__1; !($__1 = $__0.next()).done; ) {
+          var item = $__1.value;
+          {
+            ($__5 = assert(item)).is.apply($__5, $traceurRuntime.spread(types));
+          }
+        }
+      }
+    });
+  }
+  function structure(definition) {
+    var properties = Object.keys(definition);
+    return assert.define('object with properties ' + properties.join(', '), function(value) {
+      if (assert(value).is(Object)) {
+        for (var $__0 = properties[Symbol.iterator](),
+            $__1; !($__1 = $__0.next()).done; ) {
+          var property = $__1.value;
+          {
+            assert(value[property]).is(definition[property]);
+          }
+        }
+      }
+    });
+  }
+  var currentStack = [];
+  function fail(message) {
+    currentStack.push(message);
+  }
+  function define(classOrName, check) {
+    var cls = classOrName;
+    if (typeof classOrName === 'string') {
+      cls = function() {};
+      cls.__assertName = classOrName;
+    }
+    cls.assert = function(value) {
+      return check(value);
+    };
+    return cls;
+  }
+  function assert(value) {
+    return {is: function is() {
+        var $__5;
+        for (var types = [],
+            $__4 = 0; $__4 < arguments.length; $__4++)
+          types[$__4] = arguments[$__4];
+        var allErrors = [];
+        var errors;
+        for (var $__0 = types[Symbol.iterator](),
+            $__1; !($__1 = $__0.next()).done; ) {
+          var type = $__1.value;
+          {
+            errors = [];
+            if (isType(value, type, errors)) {
+              return true;
+            }
+            allErrors.push(prettyPrint(value) + ' is not instance of ' + prettyPrint(type));
+            if (errors.length) {
+              allErrors.push(errors);
+            }
+          }
+        }
+        ($__5 = currentStack).push.apply($__5, $traceurRuntime.spread(allErrors));
+        return false;
+      }};
+  }
+  assert.type = type;
+  assert.argumentTypes = assertArgumentTypes;
+  assert.returnType = returnType;
+  assert.define = define;
+  assert.fail = fail;
+  assert.string = string;
+  assert.number = number;
+  assert.boolean = boolean;
+  assert.arrayOf = arrayOf;
+  assert.structure = structure;
+  ;
+  return {
+    get assert() {
+      return assert;
+    },
+    __esModule: true
+  };
+});
+
 define('diary/diary',[], function() {
   
   var Diary = function Diary(group) {
@@ -34,7 +258,7 @@ define('diary/diary',[], function() {
           $__2; !($__2 = $__1.next()).done; ) {
         var target = $__2.value;
         {
-          var $__3 = $traceurRuntime.assertObject(target),
+          var $__3 = target,
               config = $__3.config,
               reporter = $__3.reporter;
           if ((config.level.indexOf('*') !== -1 || config.level.indexOf(level) !== -1) && (config.group.indexOf('*') !== -1 || config.group.indexOf(group) !== -1)) {
@@ -167,10 +391,11 @@ define('common/utils/util',[], function() {
   };
 });
 
+//# sourceMappingURL=../../common/utils/util.js.map;
 define('common/services/AuthenticationService',['../../common/utils/util'], function($__0) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   
   var serialize = $__0.serialize;
   var AUTH_CONFIG = {
@@ -275,12 +500,13 @@ define('common/services/AuthenticationService',['../../common/utils/util'], func
   };
 });
 
+//# sourceMappingURL=../../common/services/AuthenticationService.js.map;
 define('common/services/UserService',['./AuthenticationService', 'diary/diary'], function($__0,$__2) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   var AUTH_CONFIG = $__0.AUTH_CONFIG;
   var Diary = $__2.Diary;
   var USER_KEY = '_currentUser';
@@ -341,23 +567,28 @@ define('common/services/UserService',['./AuthenticationService', 'diary/diary'],
   };
 });
 
-define('common/controllers/LoginController',['diary/diary', '../services/AuthenticationService', '../services/UserService', '../services/AuthenticationService'], function($__0,$__2,$__4,$__6) {
+//# sourceMappingURL=../../common/services/UserService.js.map;
+define('common/controllers/LoginController',["assert", 'diary/diary', '../services/AuthenticationService', '../services/UserService', '../services/AuthenticationService'], function($__0,$__2,$__4,$__6,$__8) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   if (!$__4 || !$__4.__esModule)
-    $__4 = {'default': $__4};
+    $__4 = {default: $__4};
   if (!$__6 || !$__6.__esModule)
-    $__6 = {'default': $__6};
-  var Diary = $__0.Diary;
-  var AuthenticationServiceClass = $__2.AuthenticationService;
-  var UserServiceClass = $__4.default;
-  var AUTH_EVENTS = $__6.AUTH_EVENTS;
+    $__6 = {default: $__6};
+  if (!$__8 || !$__8.__esModule)
+    $__8 = {default: $__8};
+  var assert = $__0.assert;
+  var Diary = $__2.Diary;
+  var AuthenticationServiceClass = $__4.AuthenticationService;
+  var UserServiceClass = $__6.default;
+  var AUTH_EVENTS = $__8.AUTH_EVENTS;
   var modalInstance;
   var LoginController = function LoginController($scope, $rootScope, growl, $modal, $state, UserService, AuthenticationService) {
-    var $__8 = this;
+    var $__10 = this;
+    assert.argumentTypes($scope, $traceurRuntime.type.any, $rootScope, $traceurRuntime.type.any, growl, $traceurRuntime.type.any, $modal, $traceurRuntime.type.any, $state, $traceurRuntime.type.any, UserService, UserServiceClass, AuthenticationService, AuthenticationServiceClass);
     this.$rootScope = $rootScope;
     this.growl = growl;
     this.logger = Diary.logger('LoginController');
@@ -367,41 +598,41 @@ define('common/controllers/LoginController',['diary/diary', '../services/Authent
     this.AuthenticationService = AuthenticationService;
     this.loginDialogOpened = false;
     $scope.$on(AUTH_EVENTS.notAuthenticated, (function() {
-      if (!$__8.loginDialogOpened) {
-        $__8.growl.warning('LOGIN_REQUIRED');
+      if (!$__10.loginDialogOpened) {
+        $__10.growl.warning('LOGIN_REQUIRED');
         UserService.clear();
         $state.go('home');
-        $__8.login();
+        $__10.login();
       }
     }));
     $scope.$on(AUTH_EVENTS.sessionTimeout, (function() {
-      if (!$__8.loginDialogOpened) {
-        $__8.growl.warning('SESSION_TIMEOUT');
+      if (!$__10.loginDialogOpened) {
+        $__10.growl.warning('SESSION_TIMEOUT');
         UserService.clear();
         $state.go('home');
-        $__8.login();
+        $__10.login();
       }
     }));
     $scope.$on(AUTH_EVENTS.notAuthorized, (function() {
-      if (!$__8.loginDialogOpened) {
+      if (!$__10.loginDialogOpened) {
         growl.error('You are not authorized to access this page');
-        $__8.login();
+        $__10.login();
       }
     }));
     $scope.$on(AUTH_EVENTS.loginSuccess, (function() {
-      $__8.growl.success('LOGIN_SUCCESS');
+      $__10.growl.success('LOGIN_SUCCESS');
       console.log('destination State', $scope.destinationState);
       if ($scope.destinationState) {
-        $__8.logger.info(("redirecting to destination: " + $scope.destinationState.state.name));
+        $__10.logger.info(("redirecting to destination: " + $scope.destinationState.state.name));
         $state.go($scope.destinationState.state.name, $scope.destinationState.stateParams);
       }
     }));
     $scope.$on(AUTH_EVENTS.loginCancelled, (function() {
-      $__8.growl.warning('LOGIN_CANCELLED');
+      $__10.growl.warning('LOGIN_CANCELLED');
     }));
     $scope.$on(AUTH_EVENTS.logoutSuccess, (function() {
-      $__8.growl.warning('LOGOUT_SUCCESS');
-      $__8.$state.go('home');
+      $__10.growl.warning('LOGOUT_SUCCESS');
+      $__10.$state.go('home');
     }));
   };
   ($traceurRuntime.createClass)(LoginController, {
@@ -415,7 +646,7 @@ define('common/controllers/LoginController',['diary/diary', '../services/Authent
       return this.UserService.currentUserFromCache();
     },
     login: function() {
-      var $__8 = this;
+      var $__10 = this;
       modalInstance = this.$modal.open({
         templateUrl: 'views/common/login.html',
         controller: 'LoginModalController',
@@ -424,25 +655,25 @@ define('common/controllers/LoginController',['diary/diary', '../services/Authent
         windowClass: 'modal-login'
       });
       modalInstance.opened.then((function() {
-        $__8.logger.info('Login modal opened');
-        $__8.loginDialogOpened = true;
+        $__10.logger.info('Login modal opened');
+        $__10.loginDialogOpened = true;
       }));
       modalInstance.result.then((function(result) {
-        $__8.logger.warn(("got result: " + result + " from LoginModalController..."));
-        $__8.loginDialogOpened = false;
+        $__10.logger.warn(("got result: " + result + " from LoginModalController..."));
+        $__10.loginDialogOpened = false;
       })).catch((function(err) {
-        $__8.logger.warn('login Modal dismissed', err);
-        $__8.loginDialogOpened = false;
+        $__10.logger.warn('login Modal dismissed', err);
+        $__10.loginDialogOpened = false;
       }));
     },
     logout: function() {
-      var $__8 = this;
+      var $__10 = this;
       this.logger.warn('in logout');
       this.AuthenticationService.logout().then((function() {
-        $__8.AuthenticationService.logoutSuccess();
+        $__10.AuthenticationService.logoutSuccess();
       })).catch((function(err) {
-        $__8.logger.error(err);
-        $__8.growl.error((err.config.url + " not accessible"), {ttl: 8000});
+        $__10.logger.error(err);
+        $__10.growl.error((err.config.url + " not accessible"), {ttl: 8000});
       }));
     }
   }, {});
@@ -460,13 +691,13 @@ define('common/controllers/LoginController',['diary/diary', '../services/Authent
   };
   ($traceurRuntime.createClass)(LoginModalController, {
     submit: function(credentials) {
-      var $__8 = this;
+      var $__10 = this;
       this.AuthenticationService.login(credentials).then((function(result) {
-        $__8.AuthenticationService.loginSuccess();
+        $__10.AuthenticationService.loginSuccess();
         modalInstance.close(result);
       })).catch((function(err) {
-        $__8.logger.error(err);
-        $__8.growl.error(err.message, {ttl: 8000});
+        $__10.logger.error(err);
+        $__10.growl.error(err.message, {ttl: 8000});
       }));
     },
     cancel: function() {
@@ -486,6 +717,7 @@ define('common/controllers/LoginController',['diary/diary', '../services/Authent
   };
 });
 
+//# sourceMappingURL=../../common/controllers/LoginController.js.map;
 define('common/controllers/SettingsController',[], function() {
   
   var SettingsController = function SettingsController($scope, UserService) {
@@ -505,6 +737,7 @@ define('common/controllers/SettingsController',[], function() {
   };
 });
 
+//# sourceMappingURL=../../common/controllers/SettingsController.js.map;
 define('common/services/AuthorizationService',[], function() {
   
   var USER_ROLES = {
@@ -653,10 +886,11 @@ define('common/services/AuthorizationService',[], function() {
   };
 });
 
+//# sourceMappingURL=../../common/services/AuthorizationService.js.map;
 define('common/elements/hasPermission',['../services/AuthenticationService'], function($__0) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   
   var AUTH_EVENTS = $__0.AUTH_EVENTS;
   function hasPermission(AuthorizationService) {
@@ -692,10 +926,11 @@ define('common/elements/hasPermission',['../services/AuthenticationService'], fu
   };
 });
 
+//# sourceMappingURL=../../common/elements/hasPermission.js.map;
 define('common/utils/AuthInterceptor',['../services/AuthenticationService'], function($__0) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   var AUTH_EVENTS = $__0.AUTH_EVENTS;
   function AuthInterceptor($rootScope, $q, httpBuffer) {
     
@@ -739,6 +974,7 @@ define('common/utils/AuthInterceptor',['../services/AuthenticationService'], fun
   };
 });
 
+//# sourceMappingURL=../../common/utils/AuthInterceptor.js.map;
 /* SockJS client, version 0.3.4, http://sockjs.org, MIT License
 
 Copyright (c) 2011-2012 VMware, Inc.
@@ -3610,10 +3846,14 @@ if (typeof define === 'function' && define.amd) {
 
 define("stomp", function(){});
 
-define('common/utils/Enum',[], function() {
+define('common/utils/Enum',["assert"], function($__0) {
   
-  var EnumSymbol = function EnumSymbol(name, $__6, value) {
-    var value = $traceurRuntime.assertObject($__6).value;
+  if (!$__0 || !$__0.__esModule)
+    $__0 = {default: $__0};
+  var assert = $__0.assert;
+  var EnumSymbol = function EnumSymbol(name, $__8, value) {
+    var value = $__8.value;
+    assert.argumentTypes(name, $traceurRuntime.type.string, value, $traceurRuntime.type.number);
     this.name = name;
     this.value = (value !== undefined) ? value : Symbol(name);
     delete arguments[1].value;
@@ -3646,22 +3886,22 @@ define('common/utils/Enum',[], function() {
   };
   ($traceurRuntime.createClass)(Enum, {
     symbols: function() {
-      var $__3 = this;
+      var $__5 = this;
       return (function() {
-        var $__1 = 0,
-            $__2 = [];
-        for (var $__4 = Object.keys($__3)[$traceurRuntime.toProperty(Symbol.iterator)](),
-            $__5; !($__5 = $__4.next()).done; ) {
+        var $__3 = 0,
+            $__4 = [];
+        for (var $__6 = Object.keys($__5)[$traceurRuntime.toProperty(Symbol.iterator)](),
+            $__7; !($__7 = $__6.next()).done; ) {
           try {
             throw undefined;
           } catch (key) {
             {
-              key = $__5.value;
-              $traceurRuntime.setProperty($__2, $__1++, $__3[$traceurRuntime.toProperty(key)]);
+              key = $__7.value;
+              $traceurRuntime.setProperty($__4, $__3++, $__5[$traceurRuntime.toProperty(key)]);
             }
           }
         }
-        return $__2;
+        return $__4;
       }());
     },
     keys: function() {
@@ -3684,3939 +3924,17 @@ define('common/utils/Enum',[], function() {
   };
 });
 
-// ES6-shim 0.13.0 (c) 2013-2014 Paul Miller (http://paulmillr.com)
-// ES6-shim may be freely distributed under the MIT license.
-// For more details and documentation:
-// https://github.com/paulmillr/es6-shim/
-
-(function(undefined) {
-  
-
-  var isCallableWithoutNew = function(func) {
-    try { func(); }
-    catch (e) { return false; }
-    return true;
-  };
-
-  var supportsSubclassing = function(C, f) {
-    /* jshint proto:true */
-    try {
-      var Sub = function() { C.apply(this, arguments); };
-      if (!Sub.__proto__) { return false; /* skip test on IE < 11 */ }
-      Object.setPrototypeOf(Sub, C);
-      Sub.prototype = Object.create(C.prototype, {
-        constructor: { value: C }
-      });
-      return f(Sub);
-    } catch (e) {
-      return false;
-    }
-  };
-
-  var arePropertyDescriptorsSupported = function() {
-    try {
-      Object.defineProperty({}, 'x', {});
-      return true;
-    } catch (e) { /* this is IE 8. */
-      return false;
-    }
-  };
-
-  var startsWithRejectsRegex = function() {
-    var rejectsRegex = false;
-    if (String.prototype.startsWith) {
-      try {
-        '/a/'.startsWith(/a/);
-      } catch (e) { /* this is spec compliant */
-        rejectsRegex = true;
-      }
-    }
-    return rejectsRegex;
-  };
-
-  /*jshint evil: true */
-  var getGlobal = new Function('return this;');
-  /*jshint evil: false */
-
-  var main = function() {
-    var globals = getGlobal();
-    var global_isFinite = globals.isFinite;
-    var supportsDescriptors = !!Object.defineProperty && arePropertyDescriptorsSupported();
-    var startsWithIsCompliant = startsWithRejectsRegex();
-    var _slice = Array.prototype.slice;
-    var _indexOf = String.prototype.indexOf;
-    var _toString = Object.prototype.toString;
-    var _hasOwnProperty = Object.prototype.hasOwnProperty;
-    var ArrayIterator; // make our implementation private
-
-    // Define configurable, writable and non-enumerable props
-    // if they don’t exist.
-    var defineProperties = function(object, map) {
-      Object.keys(map).forEach(function(name) {
-        var method = map[name];
-        if (name in object) return;
-        if (supportsDescriptors) {
-          Object.defineProperty(object, name, {
-            configurable: true,
-            enumerable: false,
-            writable: true,
-            value: method
-          });
-        } else {
-          object[name] = method;
-        }
-      });
-    };
-
-    // Simple shim for Object.create on ES3 browsers
-    // (unlike real shim, no attempt to support `prototype === null`)
-    var create = Object.create || function(prototype, properties) {
-      function Type() {}
-      Type.prototype = prototype;
-      var object = new Type();
-      if (typeof properties !== "undefined") {
-        defineProperties(object, properties);
-      }
-      return object;
-    };
-
-    // This is a private name in the es6 spec, equal to '[Symbol.iterator]'
-    // we're going to use an arbitrary _-prefixed name to make our shims
-    // work properly with each other, even though we don't have full Iterator
-    // support.  That is, `Array.from(map.keys())` will work, but we don't
-    // pretend to export a "real" Iterator interface.
-    var $iterator$ = (typeof Symbol === 'object' && Symbol.iterator) ||
-      '_es6shim_iterator_';
-    // Firefox ships a partial implementation using the name @@iterator.
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=907077#c14
-    // So use that name if we detect it.
-    if (globals.Set && typeof new globals.Set()['@@iterator'] === 'function') {
-      $iterator$ = '@@iterator';
-    }
-    var addIterator = function(prototype, impl) {
-      if (!impl) { impl = function iterator() { return this; }; }
-      var o = {};
-      o[$iterator$] = impl;
-      defineProperties(prototype, o);
-    };
-
-    // taken directly from https://github.com/ljharb/is-arguments/blob/master/index.js
-    // can be replaced with require('is-arguments') if we ever use a build process instead
-    var isArguments = function isArguments(value) {
-      var str = _toString.call(value);
-      var result = str === '[object Arguments]';
-      if (!result) {
-        result = str !== '[object Array]' &&
-          value !== null &&
-          typeof value === 'object' &&
-          typeof value.length === 'number' &&
-          value.length >= 0 &&
-          _toString.call(value.callee) === '[object Function]';
-      }
-      return result;
-    };
-
-    var emulateES6construct = function(o) {
-      if (!ES.TypeIsObject(o)) throw new TypeError('bad object');
-      // es5 approximation to es6 subclass semantics: in es6, 'new Foo'
-      // would invoke Foo.@@create to allocation/initialize the new object.
-      // In es5 we just get the plain object.  So if we detect an
-      // uninitialized object, invoke o.constructor.@@create
-      if (!o._es6construct) {
-        if (o.constructor && ES.IsCallable(o.constructor['@@create'])) {
-          o = o.constructor['@@create'](o);
-        }
-        defineProperties(o, { _es6construct: true });
-      }
-      return o;
-    };
-
-    var ES = {
-      CheckObjectCoercible: function(x, optMessage) {
-        /* jshint eqnull:true */
-        if (x == null)
-          throw new TypeError(optMessage || ('Cannot call method on ' + x));
-        return x;
-      },
-
-      TypeIsObject: function(x) {
-        /* jshint eqnull:true */
-        // this is expensive when it returns false; use this function
-        // when you expect it to return true in the common case.
-        return x != null && Object(x) === x;
-      },
-
-      ToObject: function(o, optMessage) {
-        return Object(ES.CheckObjectCoercible(o, optMessage));
-      },
-
-      IsCallable: function(x) {
-        return typeof x === 'function' &&
-          // some versions of IE say that typeof /abc/ === 'function'
-          _toString.call(x) === '[object Function]';
-      },
-
-      ToInt32: function(x) {
-        return x >> 0;
-      },
-
-      ToUint32: function(x) {
-        return x >>> 0;
-      },
-
-      ToInteger: function(value) {
-        var number = +value;
-        if (Number.isNaN(number)) return 0;
-        if (number === 0 || !Number.isFinite(number)) return number;
-        return Math.sign(number) * Math.floor(Math.abs(number));
-      },
-
-      ToLength: function(value) {
-        var len = ES.ToInteger(value);
-        if (len <= 0) return 0; // includes converting -0 to +0
-        if (len > Number.MAX_SAFE_INTEGER) return Number.MAX_SAFE_INTEGER;
-        return len;
-      },
-
-      SameValue: function(a, b) {
-        if (a === b) {
-          // 0 === -0, but they are not identical.
-          if (a === 0) return 1 / a === 1 / b;
-          return true;
-        }
-        return Number.isNaN(a) && Number.isNaN(b);
-      },
-
-      SameValueZero: function(a, b) {
-        // same as SameValue except for SameValueZero(+0, -0) == true
-        return (a === b) || (Number.isNaN(a) && Number.isNaN(b));
-      },
-
-      IsIterable: function(o) {
-        return ES.TypeIsObject(o) &&
-          (o[$iterator$] !== undefined || isArguments(o));
-      },
-
-      GetIterator: function(o) {
-        if (isArguments(o)) {
-          // special case support for `arguments`
-          return new ArrayIterator(o, "value");
-        }
-        var it = o[$iterator$]();
-        if (!ES.TypeIsObject(it)) {
-          throw new TypeError('bad iterator');
-        }
-        return it;
-      },
-
-      IteratorNext: function(it) {
-        var result = (arguments.length > 1) ? it.next(arguments[1]) : it.next();
-        if (!ES.TypeIsObject(result)) {
-          throw new TypeError('bad iterator');
-        }
-        return result;
-      },
-
-      Construct: function(C, args) {
-        // CreateFromConstructor
-        var obj;
-        if (ES.IsCallable(C['@@create'])) {
-          obj = C['@@create']();
-        } else {
-          // OrdinaryCreateFromConstructor
-          obj = create(C.prototype || null);
-        }
-        // Mark that we've used the es6 construct path
-        // (see emulateES6construct)
-        defineProperties(obj, { _es6construct: true });
-        // Call the constructor.
-        var result = C.apply(obj, args);
-        return ES.TypeIsObject(result) ? result : obj;
-      }
-    };
-
-    var numberConversion = (function () {
-      // from https://github.com/inexorabletash/polyfill/blob/master/typedarray.js#L176-L266
-      // with permission and license, per https://twitter.com/inexorabletash/status/372206509540659200
-
-      function roundToEven(n) {
-        var w = Math.floor(n), f = n - w;
-        if (f < 0.5) {
-          return w;
-        }
-        if (f > 0.5) {
-          return w + 1;
-        }
-        return w % 2 ? w + 1 : w;
-      }
-
-      function packIEEE754(v, ebits, fbits) {
-        var bias = (1 << (ebits - 1)) - 1,
-          s, e, f, ln,
-          i, bits, str, bytes;
-
-        // Compute sign, exponent, fraction
-        if (v !== v) {
-          // NaN
-          // http://dev.w3.org/2006/webapi/WebIDL/#es-type-mapping
-          e = (1 << ebits) - 1;
-          f = Math.pow(2, fbits - 1);
-          s = 0;
-        } else if (v === Infinity || v === -Infinity) {
-          e = (1 << ebits) - 1;
-          f = 0;
-          s = (v < 0) ? 1 : 0;
-        } else if (v === 0) {
-          e = 0;
-          f = 0;
-          s = (1 / v === -Infinity) ? 1 : 0;
-        } else {
-          s = v < 0;
-          v = Math.abs(v);
-
-          if (v >= Math.pow(2, 1 - bias)) {
-            e = Math.min(Math.floor(Math.log(v) / Math.LN2), 1023);
-            f = roundToEven(v / Math.pow(2, e) * Math.pow(2, fbits));
-            if (f / Math.pow(2, fbits) >= 2) {
-              e = e + 1;
-              f = 1;
-            }
-            if (e > bias) {
-              // Overflow
-              e = (1 << ebits) - 1;
-              f = 0;
-            } else {
-              // Normal
-              e = e + bias;
-              f = f - Math.pow(2, fbits);
-            }
-          } else {
-            // Subnormal
-            e = 0;
-            f = roundToEven(v / Math.pow(2, 1 - bias - fbits));
-          }
-        }
-
-        // Pack sign, exponent, fraction
-        bits = [];
-        for (i = fbits; i; i -= 1) {
-          bits.push(f % 2 ? 1 : 0);
-          f = Math.floor(f / 2);
-        }
-        for (i = ebits; i; i -= 1) {
-          bits.push(e % 2 ? 1 : 0);
-          e = Math.floor(e / 2);
-        }
-        bits.push(s ? 1 : 0);
-        bits.reverse();
-        str = bits.join('');
-
-        // Bits to bytes
-        bytes = [];
-        while (str.length) {
-          bytes.push(parseInt(str.substring(0, 8), 2));
-          str = str.substring(8);
-        }
-        return bytes;
-      }
-
-      function unpackIEEE754(bytes, ebits, fbits) {
-        // Bytes to bits
-        var bits = [], i, j, b, str,
-            bias, s, e, f;
-
-        for (i = bytes.length; i; i -= 1) {
-          b = bytes[i - 1];
-          for (j = 8; j; j -= 1) {
-            bits.push(b % 2 ? 1 : 0);
-            b = b >> 1;
-          }
-        }
-        bits.reverse();
-        str = bits.join('');
-
-        // Unpack sign, exponent, fraction
-        bias = (1 << (ebits - 1)) - 1;
-        s = parseInt(str.substring(0, 1), 2) ? -1 : 1;
-        e = parseInt(str.substring(1, 1 + ebits), 2);
-        f = parseInt(str.substring(1 + ebits), 2);
-
-        // Produce number
-        if (e === (1 << ebits) - 1) {
-          return f !== 0 ? NaN : s * Infinity;
-        } else if (e > 0) {
-          // Normalized
-          return s * Math.pow(2, e - bias) * (1 + f / Math.pow(2, fbits));
-        } else if (f !== 0) {
-          // Denormalized
-          return s * Math.pow(2, -(bias - 1)) * (f / Math.pow(2, fbits));
-        } else {
-          return s < 0 ? -0 : 0;
-        }
-      }
-
-      function unpackFloat64(b) { return unpackIEEE754(b, 11, 52); }
-      function packFloat64(v) { return packIEEE754(v, 11, 52); }
-      function unpackFloat32(b) { return unpackIEEE754(b, 8, 23); }
-      function packFloat32(v) { return packIEEE754(v, 8, 23); }
-
-      var conversions = {
-        toFloat32: function (num) { return unpackFloat32(packFloat32(num)); }
-      };
-      if (typeof Float32Array !== 'undefined') {
-        var float32array = new Float32Array(1);
-        conversions.toFloat32 = function (num) {
-          float32array[0] = num;
-          return float32array[0];
-        };
-      }
-      return conversions;
-    }());
-
-    defineProperties(String, {
-      fromCodePoint: function() {
-        var points = _slice.call(arguments, 0, arguments.length);
-        var result = [];
-        var next;
-        for (var i = 0, length = points.length; i < length; i++) {
-          next = Number(points[i]);
-          if (!ES.SameValue(next, ES.ToInteger(next)) ||
-              next < 0 || next > 0x10FFFF) {
-            throw new RangeError('Invalid code point ' + next);
-          }
-
-          if (next < 0x10000) {
-            result.push(String.fromCharCode(next));
-          } else {
-            next -= 0x10000;
-            result.push(String.fromCharCode((next >> 10) + 0xD800));
-            result.push(String.fromCharCode((next % 0x400) + 0xDC00));
-          }
-        }
-        return result.join('');
-      },
-
-      raw: function(callSite) { // raw.length===1
-        var substitutions = _slice.call(arguments, 1, arguments.length);
-        var cooked = ES.ToObject(callSite, 'bad callSite');
-        var rawValue = cooked.raw;
-        var raw = ES.ToObject(rawValue, 'bad raw value');
-        var len = Object.keys(raw).length;
-        var literalsegments = ES.ToLength(len);
-        if (literalsegments === 0) {
-          return '';
-        }
-
-        var stringElements = [];
-        var nextIndex = 0;
-        var nextKey, next, nextSeg, nextSub;
-        while (nextIndex < literalsegments) {
-          nextKey = String(nextIndex);
-          next = raw[nextKey];
-          nextSeg = String(next);
-          stringElements.push(nextSeg);
-          if (nextIndex + 1 >= literalsegments) {
-            break;
-          }
-          next = substitutions[nextKey];
-          if (next === undefined) {
-            break;
-          }
-          nextSub = String(next);
-          stringElements.push(nextSub);
-          nextIndex++;
-        }
-        return stringElements.join('');
-      }
-    });
-
-    var StringShims = {
-      // Fast repeat, uses the `Exponentiation by squaring` algorithm.
-      // Perf: http://jsperf.com/string-repeat2/2
-      repeat: (function() {
-        var repeat = function(s, times) {
-          if (times < 1) return '';
-          if (times % 2) return repeat(s, times - 1) + s;
-          var half = repeat(s, times / 2);
-          return half + half;
-        };
-
-        return function(times) {
-          var thisStr = String(ES.CheckObjectCoercible(this));
-          times = ES.ToInteger(times);
-          if (times < 0 || times === Infinity) {
-            throw new RangeError('Invalid String#repeat value');
-          }
-          return repeat(thisStr, times);
-        };
-      })(),
-
-      startsWith: function(searchStr) {
-        var thisStr = String(ES.CheckObjectCoercible(this));
-        if (_toString.call(searchStr) === '[object RegExp]') throw new TypeError('Cannot call method "startsWith" with a regex');
-        searchStr = String(searchStr);
-        var startArg = arguments.length > 1 ? arguments[1] : undefined;
-        var start = Math.max(ES.ToInteger(startArg), 0);
-        return thisStr.slice(start, start + searchStr.length) === searchStr;
-      },
-
-      endsWith: function(searchStr) {
-        var thisStr = String(ES.CheckObjectCoercible(this));
-        if (_toString.call(searchStr) === '[object RegExp]') throw new TypeError('Cannot call method "endsWith" with a regex');
-        searchStr = String(searchStr);
-        var thisLen = thisStr.length;
-        var posArg = arguments.length > 1 ? arguments[1] : undefined;
-        var pos = posArg === undefined ? thisLen : ES.ToInteger(posArg);
-        var end = Math.min(Math.max(pos, 0), thisLen);
-        return thisStr.slice(end - searchStr.length, end) === searchStr;
-      },
-
-      contains: function(searchString) {
-        var position = arguments.length > 1 ? arguments[1] : undefined;
-        // Somehow this trick makes method 100% compat with the spec.
-        return _indexOf.call(this, searchString, position) !== -1;
-      },
-
-      codePointAt: function(pos) {
-        var thisStr = String(ES.CheckObjectCoercible(this));
-        var position = ES.ToInteger(pos);
-        var length = thisStr.length;
-        if (position < 0 || position >= length) return undefined;
-        var first = thisStr.charCodeAt(position);
-        var isEnd = (position + 1 === length);
-        if (first < 0xD800 || first > 0xDBFF || isEnd) return first;
-        var second = thisStr.charCodeAt(position + 1);
-        if (second < 0xDC00 || second > 0xDFFF) return first;
-        return ((first - 0xD800) * 1024) + (second - 0xDC00) + 0x10000;
-      }
-    };
-    defineProperties(String.prototype, StringShims);
-
-    var hasStringTrimBug = '\u0085'.trim().length !== 1;
-    if (hasStringTrimBug) {
-      var originalStringTrim = String.prototype.trim;
-      delete String.prototype.trim;
-      // whitespace from: http://es5.github.io/#x15.5.4.20
-      // implementation from https://github.com/es-shims/es5-shim/blob/v3.4.0/es5-shim.js#L1304-L1324
-      var ws = [
-        '\x09\x0A\x0B\x0C\x0D\x20\xA0\u1680\u180E\u2000\u2001\u2002\u2003',
-        '\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\u2028',
-        '\u2029\uFEFF'
-      ].join('');
-      var trimBeginRegexp = new RegExp('^[' + ws + '][' + ws + ']*');
-      var trimEndRegexp = new RegExp('[' + ws + '][' + ws + ']*$');
-      defineProperties(String.prototype, {
-        trim: function() {
-          if (this === undefined || this === null) {
-            throw new TypeError("can't convert " + this + " to object");
-          }
-          return String(this)
-            .replace(trimBeginRegexp, "")
-            .replace(trimEndRegexp, "");
-          }
-      });
-    }
-
-    // see https://people.mozilla.org/~jorendorff/es6-draft.html#sec-string.prototype-@@iterator
-    var StringIterator = function(s) {
-      this._s = String(ES.CheckObjectCoercible(s));
-      this._i = 0;
-    };
-    StringIterator.prototype.next = function() {
-      var s = this._s, i = this._i;
-      if (s === undefined || i >= s.length) {
-        this._s = undefined;
-        return { value: undefined, done: true };
-      }
-      var first = s.charCodeAt(i), second, len;
-      if (first < 0xD800 || first > 0xDBFF || (i+1) == s.length) {
-        len = 1;
-      } else {
-        second = s.charCodeAt(i+1);
-        len = (second < 0xDC00 || second > 0xDFFF) ? 1 : 2;
-      }
-      this._i = i + len;
-      return { value: s.substr(i, len), done: false };
-    };
-    addIterator(StringIterator.prototype);
-    addIterator(String.prototype, function() {
-      return new StringIterator(this);
-    });
-
-    if (!startsWithIsCompliant) {
-      // Firefox has a noncompliant startsWith implementation
-      String.prototype.startsWith = StringShims.startsWith;
-      String.prototype.endsWith = StringShims.endsWith;
-    }
-
-    defineProperties(Array, {
-      from: function(iterable) {
-        var mapFn = arguments.length > 1 ? arguments[1] : undefined;
-        var thisArg = arguments.length > 2 ? arguments[2] : undefined;
-
-        var list = ES.ToObject(iterable, 'bad iterable');
-        if (mapFn !== undefined && !ES.IsCallable(mapFn)) {
-          throw new TypeError('Array.from: when provided, the second argument must be a function');
-        }
-
-        var usingIterator = ES.IsIterable(list);
-        // does the spec really mean that Arrays should use ArrayIterator?
-        // https://bugs.ecmascript.org/show_bug.cgi?id=2416
-        //if (Array.isArray(list)) { usingIterator=false; }
-        var length = usingIterator ? 0 : ES.ToLength(list.length);
-        var result = ES.IsCallable(this) ? Object(usingIterator ? new this() : new this(length)) : new Array(length);
-        var it = usingIterator ? ES.GetIterator(list) : null;
-        var value;
-
-        for (var i = 0; usingIterator || (i < length); i++) {
-          if (usingIterator) {
-            value = ES.IteratorNext(it);
-            if (value.done) {
-              length = i;
-              break;
-            }
-            value = value.value;
-          } else {
-            value = list[i];
-          }
-          if (mapFn) {
-            result[i] = thisArg ? mapFn.call(thisArg, value, i) : mapFn(value, i);
-          } else {
-            result[i] = value;
-          }
-        }
-
-        result.length = length;
-        return result;
-      },
-
-      of: function() {
-        return Array.from(arguments);
-      }
-    });
-
-    // Our ArrayIterator is private; see
-    // https://github.com/paulmillr/es6-shim/issues/252
-    ArrayIterator = function(array, kind) {
-        this.i = 0;
-        this.array = array;
-        this.kind = kind;
-    };
-
-    defineProperties(ArrayIterator.prototype, {
-      next: function() {
-        var i = this.i, array = this.array;
-        if (i === undefined || this.kind === undefined) {
-          throw new TypeError('Not an ArrayIterator');
-        }
-        if (array!==undefined) {
-          var len = ES.ToLength(array.length);
-          for (; i < len; i++) {
-            var kind = this.kind;
-            var retval;
-            if (kind === "key") {
-              retval = i;
-            } else if (kind === "value") {
-              retval = array[i];
-            } else if (kind === "entry") {
-              retval = [i, array[i]];
-            }
-            this.i = i + 1;
-            return { value: retval, done: false };
-          }
-        }
-        this.array = undefined;
-        return { value: undefined, done: true };
-      }
-    });
-    addIterator(ArrayIterator.prototype);
-
-    defineProperties(Array.prototype, {
-      copyWithin: function(target, start) {
-        var end = arguments[2]; // copyWithin.length must be 2
-        var o = ES.ToObject(this);
-        var len = ES.ToLength(o.length);
-        target = ES.ToInteger(target);
-        start = ES.ToInteger(start);
-        var to = target < 0 ? Math.max(len + target, 0) : Math.min(target, len);
-        var from = start < 0 ? Math.max(len + start, 0) : Math.min(start, len);
-        end = (end===undefined) ? len : ES.ToInteger(end);
-        var fin = end < 0 ? Math.max(len + end, 0) : Math.min(end, len);
-        var count = Math.min(fin - from, len - to);
-        var direction = 1;
-        if (from < to && to < (from + count)) {
-          direction = -1;
-          from += count - 1;
-          to += count - 1;
-        }
-        while (count > 0) {
-          if (_hasOwnProperty.call(o, from)) {
-            o[to] = o[from];
-          } else {
-            delete o[from];
-          }
-          from += direction;
-          to += direction;
-          count -= 1;
-        }
-        return o;
-      },
-
-      fill: function(value) {
-        var start = arguments[1], end = arguments[2]; // fill.length===1
-        var O = ES.ToObject(this);
-        var len = ES.ToLength(O.length);
-        start = ES.ToInteger(start===undefined ? 0 : start);
-        end = ES.ToInteger(end===undefined ? len : end);
-
-        var relativeStart = start < 0 ? Math.max(len + start, 0) : Math.min(start, len);
-
-        for (var i = relativeStart; i < len && i < end; ++i) {
-          O[i] = value;
-        }
-        return O;
-      },
-
-      find: function(predicate) {
-        var list = ES.ToObject(this);
-        var length = ES.ToLength(list.length);
-        if (!ES.IsCallable(predicate)) {
-          throw new TypeError('Array#find: predicate must be a function');
-        }
-        var thisArg = arguments[1];
-        for (var i = 0, value; i < length; i++) {
-          if (i in list) {
-            value = list[i];
-            if (predicate.call(thisArg, value, i, list)) return value;
-          }
-        }
-        return undefined;
-      },
-
-      findIndex: function(predicate) {
-        var list = ES.ToObject(this);
-        var length = ES.ToLength(list.length);
-        if (!ES.IsCallable(predicate)) {
-          throw new TypeError('Array#findIndex: predicate must be a function');
-        }
-        var thisArg = arguments[1];
-        for (var i = 0; i < length; i++) {
-          if (i in list) {
-            if (predicate.call(thisArg, list[i], i, list)) return i;
-          }
-        }
-        return -1;
-      },
-
-      keys: function() {
-        return new ArrayIterator(this, "key");
-      },
-
-      values: function() {
-        return new ArrayIterator(this, "value");
-      },
-
-      entries: function() {
-        return new ArrayIterator(this, "entry");
-      }
-    });
-    addIterator(Array.prototype, function() { return this.values(); });
-    // Chrome defines keys/values/entries on Array, but doesn't give us
-    // any way to identify its iterator.  So add our own shimmed field.
-    if (Object.getPrototypeOf) {
-      addIterator(Object.getPrototypeOf([].values()));
-    }
-
-    var maxSafeInteger = Math.pow(2, 53) - 1;
-    defineProperties(Number, {
-      MAX_SAFE_INTEGER: maxSafeInteger,
-      MIN_SAFE_INTEGER: -maxSafeInteger,
-      EPSILON: 2.220446049250313e-16,
-
-      parseInt: globals.parseInt,
-      parseFloat: globals.parseFloat,
-
-      isFinite: function(value) {
-        return typeof value === 'number' && global_isFinite(value);
-      },
-
-      isInteger: function(value) {
-        return typeof value === 'number' &&
-          !Number.isNaN(value) &&
-          Number.isFinite(value) &&
-          ES.ToInteger(value) === value;
-      },
-
-      isSafeInteger: function(value) {
-        return Number.isInteger(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
-      },
-
-      isNaN: function(value) {
-        // NaN !== NaN, but they are identical.
-        // NaNs are the only non-reflexive value, i.e., if x !== x,
-        // then x is NaN.
-        // isNaN is broken: it converts its argument to number, so
-        // isNaN('foo') => true
-        return value !== value;
-      }
-
-    });
-
-    if (supportsDescriptors) {
-      defineProperties(Object, {
-        getPropertyDescriptor: function(subject, name) {
-          var pd = Object.getOwnPropertyDescriptor(subject, name);
-          var proto = Object.getPrototypeOf(subject);
-          while (pd === undefined && proto !== null) {
-            pd = Object.getOwnPropertyDescriptor(proto, name);
-            proto = Object.getPrototypeOf(proto);
-          }
-          return pd;
-        },
-
-        getPropertyNames: function(subject) {
-          var result = Object.getOwnPropertyNames(subject);
-          var proto = Object.getPrototypeOf(subject);
-
-          var addProperty = function(property) {
-            if (result.indexOf(property) === -1) {
-              result.push(property);
-            }
-          };
-
-          while (proto !== null) {
-            Object.getOwnPropertyNames(proto).forEach(addProperty);
-            proto = Object.getPrototypeOf(proto);
-          }
-          return result;
-        }
-      });
-
-      defineProperties(Object, {
-        // 19.1.3.1
-        assign: function(target, source) {
-          if (!ES.TypeIsObject(target)) {
-            throw new TypeError('target must be an object');
-          }
-          return Array.prototype.reduce.call(arguments, function(target, source) {
-            if (!ES.TypeIsObject(source)) {
-              throw new TypeError('source must be an object');
-            }
-            return Object.keys(source).reduce(function(target, key) {
-              target[key] = source[key];
-              return target;
-            }, target);
-          });
-        },
-
-        getOwnPropertyKeys: function(subject) {
-          return Object.keys(subject);
-        },
-
-        is: function(a, b) {
-          return ES.SameValue(a, b);
-        },
-
-        // 19.1.3.9
-        // shim from https://gist.github.com/WebReflection/5593554
-        setPrototypeOf: (function(Object, magic) {
-          var set;
-
-          var checkArgs = function(O, proto) {
-            if (!ES.TypeIsObject(O)) {
-              throw new TypeError('cannot set prototype on a non-object');
-            }
-            if (!(proto===null || ES.TypeIsObject(proto))) {
-              throw new TypeError('can only set prototype to an object or null'+proto);
-            }
-          };
-
-          var setPrototypeOf = function(O, proto) {
-            checkArgs(O, proto);
-            set.call(O, proto);
-            return O;
-          };
-
-          try {
-            // this works already in Firefox and Safari
-            set = Object.getOwnPropertyDescriptor(Object.prototype, magic).set;
-            set.call({}, null);
-          } catch (e) {
-            if (Object.prototype !== {}[magic]) {
-              // IE < 11 cannot be shimmed
-              return;
-            }
-            // probably Chrome or some old Mobile stock browser
-            set = function(proto) {
-              this[magic] = proto;
-            };
-            // please note that this will **not** work
-            // in those browsers that do not inherit
-            // __proto__ by mistake from Object.prototype
-            // in these cases we should probably throw an error
-            // or at least be informed about the issue
-            setPrototypeOf.polyfill = setPrototypeOf(
-              setPrototypeOf({}, null),
-              Object.prototype
-            ) instanceof Object;
-            // setPrototypeOf.polyfill === true means it works as meant
-            // setPrototypeOf.polyfill === false means it's not 100% reliable
-            // setPrototypeOf.polyfill === undefined
-            // or
-            // setPrototypeOf.polyfill ==  null means it's not a polyfill
-            // which means it works as expected
-            // we can even delete Object.prototype.__proto__;
-          }
-          return setPrototypeOf;
-        })(Object, '__proto__')
-      });
-    }
-
-    // Workaround bug in Opera 12 where setPrototypeOf(x, null) doesn't work,
-    // but Object.create(null) does.
-    if (Object.setPrototypeOf && Object.getPrototypeOf &&
-        Object.getPrototypeOf(Object.setPrototypeOf({}, null)) !== null &&
-        Object.getPrototypeOf(Object.create(null)) === null) {
-      (function() {
-        var FAKENULL = Object.create(null);
-        var gpo = Object.getPrototypeOf, spo = Object.setPrototypeOf;
-        Object.getPrototypeOf = function(o) {
-          var result = gpo(o);
-          return result === FAKENULL ? null : result;
-        };
-        Object.setPrototypeOf = function(o, p) {
-          if (p === null) { p = FAKENULL; }
-          return spo(o, p);
-        };
-        Object.setPrototypeOf.polyfill = false;
-      })();
-    }
-
-    try {
-      Object.keys('foo');
-    } catch (e) {
-      var originalObjectKeys = Object.keys;
-      Object.keys = function (obj) {
-        return originalObjectKeys(ES.ToObject(obj));
-      };
-    }
-
-    var MathShims = {
-      acosh: function(value) {
-        value = Number(value);
-        if (Number.isNaN(value) || value < 1) return NaN;
-        if (value === 1) return 0;
-        if (value === Infinity) return value;
-        return Math.log(value + Math.sqrt(value * value - 1));
-      },
-
-      asinh: function(value) {
-        value = Number(value);
-        if (value === 0 || !global_isFinite(value)) {
-          return value;
-        }
-        return value < 0 ? -Math.asinh(-value) : Math.log(value + Math.sqrt(value * value + 1));
-      },
-
-      atanh: function(value) {
-        value = Number(value);
-        if (Number.isNaN(value) || value < -1 || value > 1) {
-          return NaN;
-        }
-        if (value === -1) return -Infinity;
-        if (value === 1) return Infinity;
-        if (value === 0) return value;
-        return 0.5 * Math.log((1 + value) / (1 - value));
-      },
-
-      cbrt: function(value) {
-        value = Number(value);
-        if (value === 0) return value;
-        var negate = value < 0, result;
-        if (negate) value = -value;
-        result = Math.pow(value, 1/3);
-        return negate ? -result : result;
-      },
-
-      clz32: function(value) {
-        // See https://bugs.ecmascript.org/show_bug.cgi?id=2465
-        value = Number(value);
-        if (Number.isNaN(value)) return NaN;
-        var number = ES.ToUint32(value);
-        if (number === 0) {
-          return 32;
-        }
-        return 32 - (number).toString(2).length;
-      },
-
-      cosh: function(value) {
-        value = Number(value);
-        if (value === 0) return 1; // +0 or -0
-        if (Number.isNaN(value)) return NaN;
-        if (!global_isFinite(value)) return Infinity;
-        if (value < 0) value = -value;
-        if (value > 21) return Math.exp(value) / 2;
-        return (Math.exp(value) + Math.exp(-value)) / 2;
-      },
-
-      expm1: function(value) {
-        value = Number(value);
-        if (value === -Infinity) return -1;
-        if (!global_isFinite(value) || value === 0) return value;
-        return Math.exp(value) - 1;
-      },
-
-      hypot: function(x, y) {
-        var anyNaN = false;
-        var allZero = true;
-        var anyInfinity = false;
-        var numbers = [];
-        Array.prototype.every.call(arguments, function(arg) {
-          var num = Number(arg);
-          if (Number.isNaN(num)) anyNaN = true;
-          else if (num === Infinity || num === -Infinity) anyInfinity = true;
-          else if (num !== 0) allZero = false;
-          if (anyInfinity) {
-            return false;
-          } else if (!anyNaN) {
-            numbers.push(Math.abs(num));
-          }
-          return true;
-        });
-        if (anyInfinity) return Infinity;
-        if (anyNaN) return NaN;
-        if (allZero) return 0;
-
-        numbers.sort(function (a, b) { return b - a; });
-        var largest = numbers[0];
-        var divided = numbers.map(function (number) { return number / largest; });
-        var sum = divided.reduce(function (sum, number) { return sum += number * number; }, 0);
-        return largest * Math.sqrt(sum);
-      },
-
-      log2: function(value) {
-        return Math.log(value) * Math.LOG2E;
-      },
-
-      log10: function(value) {
-        return Math.log(value) * Math.LOG10E;
-      },
-
-      log1p: function(value) {
-        value = Number(value);
-        if (value < -1 || Number.isNaN(value)) return NaN;
-        if (value === 0 || value === Infinity) return value;
-        if (value === -1) return -Infinity;
-        var result = 0;
-        var n = 50;
-
-        if (value < 0 || value > 1) return Math.log(1 + value);
-        for (var i = 1; i < n; i++) {
-          if ((i % 2) === 0) {
-            result -= Math.pow(value, i) / i;
-          } else {
-            result += Math.pow(value, i) / i;
-          }
-        }
-
-        return result;
-      },
-
-      sign: function(value) {
-        var number = +value;
-        if (number === 0) return number;
-        if (Number.isNaN(number)) return number;
-        return number < 0 ? -1 : 1;
-      },
-
-      sinh: function(value) {
-        value = Number(value);
-        if (!global_isFinite(value) || value === 0) return value;
-        return (Math.exp(value) - Math.exp(-value)) / 2;
-      },
-
-      tanh: function(value) {
-        value = Number(value);
-        if (Number.isNaN(value) || value === 0) return value;
-        if (value === Infinity) return 1;
-        if (value === -Infinity) return -1;
-        return (Math.exp(value) - Math.exp(-value)) / (Math.exp(value) + Math.exp(-value));
-      },
-
-      trunc: function(value) {
-        var number = Number(value);
-        return number < 0 ? -Math.floor(-number) : Math.floor(number);
-      },
-
-      imul: function(x, y) {
-        // taken from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/imul
-        var ah  = (x >>> 16) & 0xffff;
-        var al = x & 0xffff;
-        var bh  = (y >>> 16) & 0xffff;
-        var bl = y & 0xffff;
-        // the shift by 0 fixes the sign on the high part
-        // the final |0 converts the unsigned value into a signed value
-        return ((al * bl) + (((ah * bl + al * bh) << 16) >>> 0)|0);
-      },
-
-      fround: function(x) {
-        if (x === 0 || x === Infinity || x === -Infinity || Number.isNaN(x)) {
-          return x;
-        }
-        var num = Number(x);
-        return numberConversion.toFloat32(num);
-      }
-    };
-    defineProperties(Math, MathShims);
-
-    if (Math.imul(0xffffffff, 5) !== -5) {
-      // Safari 6.1, at least, reports "0" for this value
-      Math.imul = MathShims.imul;
-    }
-
-    // Promises
-    // Simplest possible implementation; use a 3rd-party library if you
-    // want the best possible speed and/or long stack traces.
-    var PromiseShim = (function() {
-
-      var Promise, Promise$prototype;
-
-      ES.IsPromise = function(promise) {
-        if (!ES.TypeIsObject(promise)) {
-          return false;
-        }
-        if (!promise._promiseConstructor) {
-          // _promiseConstructor is a bit more unique than _status, so we'll
-          // check that instead of the [[PromiseStatus]] internal field.
-          return false;
-        }
-        if (promise._status === undefined) {
-          return false; // uninitialized
-        }
-        return true;
-      };
-
-      // "PromiseCapability" in the spec is what most promise implementations
-      // call a "deferred".
-      var PromiseCapability = function(C) {
-        if (!ES.IsCallable(C)) {
-          throw new TypeError('bad promise constructor');
-        }
-        var capability = this;
-        var resolver = function(resolve, reject) {
-          capability.resolve = resolve;
-          capability.reject = reject;
-        };
-        capability.promise = ES.Construct(C, [resolver]);
-        // see https://bugs.ecmascript.org/show_bug.cgi?id=2478
-        if (!capability.promise._es6construct) {
-          throw new TypeError('bad promise constructor');
-        }
-        if (!(ES.IsCallable(capability.resolve) &&
-              ES.IsCallable(capability.reject))) {
-          throw new TypeError('bad promise constructor');
-        }
-      };
-
-      // find an appropriate setImmediate-alike
-      var setTimeout = globals.setTimeout;
-      var makeZeroTimeout;
-      if (typeof window !== 'undefined' && ES.IsCallable(window.postMessage)) {
-        makeZeroTimeout = function() {
-          // from http://dbaron.org/log/20100309-faster-timeouts
-          var timeouts = [];
-          var messageName = "zero-timeout-message";
-          var setZeroTimeout = function(fn) {
-            timeouts.push(fn);
-            window.postMessage(messageName, "*");
-          };
-          var handleMessage = function(event) {
-            if (event.source == window && event.data == messageName) {
-              event.stopPropagation();
-              if (timeouts.length === 0) { return; }
-              var fn = timeouts.shift();
-              fn();
-            }
-          };
-          window.addEventListener("message", handleMessage, true);
-          return setZeroTimeout;
-        };
-      }
-      var makePromiseAsap = function() {
-        // An efficient task-scheduler based on a pre-existing Promise
-        // implementation, which we can use even if we override the
-        // global Promise below (in order to workaround bugs)
-        // https://github.com/Raynos/observ-hash/issues/2#issuecomment-35857671
-        var P = globals.Promise;
-        return P && P.resolve && function(task) {
-          return P.resolve().then(task);
-        };
-      };
-      var enqueue = ES.IsCallable(globals.setImmediate) ?
-        globals.setImmediate.bind(globals) :
-        typeof process === 'object' && process.nextTick ? process.nextTick :
-        makePromiseAsap() ||
-        (ES.IsCallable(makeZeroTimeout) ? makeZeroTimeout() :
-        function(task) { setTimeout(task, 0); }); // fallback
-
-      var triggerPromiseReactions = function(reactions, x) {
-        reactions.forEach(function(reaction) {
-          enqueue(function() {
-            // PromiseReactionTask
-            var handler = reaction.handler;
-            var capability = reaction.capability;
-            var resolve = capability.resolve;
-            var reject = capability.reject;
-            try {
-              var result = handler(x);
-              if (result === capability.promise) {
-                throw new TypeError('self resolution');
-              }
-              var updateResult =
-                updatePromiseFromPotentialThenable(result, capability);
-              if (!updateResult) {
-                resolve(result);
-              }
-            } catch (e) {
-              reject(e);
-            }
-          });
-        });
-      };
-
-      var updatePromiseFromPotentialThenable = function(x, capability) {
-        if (!ES.TypeIsObject(x)) {
-          return false;
-        }
-        var resolve = capability.resolve;
-        var reject = capability.reject;
-        try {
-          var then = x.then; // only one invocation of accessor
-          if (!ES.IsCallable(then)) { return false; }
-          then.call(x, resolve, reject);
-        } catch(e) {
-          reject(e);
-        }
-        return true;
-      };
-
-      var promiseResolutionHandler = function(promise, onFulfilled, onRejected){
-        return function(x) {
-          if (x === promise) {
-            return onRejected(new TypeError('self resolution'));
-          }
-          var C = promise._promiseConstructor;
-          var capability = new PromiseCapability(C);
-          var updateResult = updatePromiseFromPotentialThenable(x, capability);
-          if (updateResult) {
-            return capability.promise.then(onFulfilled, onRejected);
-          } else {
-            return onFulfilled(x);
-          }
-        };
-      };
-
-      Promise = function(resolver) {
-        var promise = this;
-        promise = emulateES6construct(promise);
-        if (!promise._promiseConstructor) {
-          // we use _promiseConstructor as a stand-in for the internal
-          // [[PromiseStatus]] field; it's a little more unique.
-          throw new TypeError('bad promise');
-        }
-        if (promise._status !== undefined) {
-          throw new TypeError('promise already initialized');
-        }
-        // see https://bugs.ecmascript.org/show_bug.cgi?id=2482
-        if (!ES.IsCallable(resolver)) {
-          throw new TypeError('not a valid resolver');
-        }
-        promise._status = 'unresolved';
-        promise._resolveReactions = [];
-        promise._rejectReactions = [];
-
-        var resolve = function(resolution) {
-          if (promise._status !== 'unresolved') { return; }
-          var reactions = promise._resolveReactions;
-          promise._result = resolution;
-          promise._resolveReactions = undefined;
-          promise._rejectReactions = undefined;
-          promise._status = 'has-resolution';
-          triggerPromiseReactions(reactions, resolution);
-        };
-        var reject = function(reason) {
-          if (promise._status !== 'unresolved') { return; }
-          var reactions = promise._rejectReactions;
-          promise._result = reason;
-          promise._resolveReactions = undefined;
-          promise._rejectReactions = undefined;
-          promise._status = 'has-rejection';
-          triggerPromiseReactions(reactions, reason);
-        };
-        try {
-          resolver(resolve, reject);
-        } catch (e) {
-          reject(e);
-        }
-        return promise;
-      };
-      Promise$prototype = Promise.prototype;
-      defineProperties(Promise, {
-        '@@create': function(obj) {
-          var constructor = this;
-          // AllocatePromise
-          // The `obj` parameter is a hack we use for es5
-          // compatibility.
-          var prototype = constructor.prototype || Promise$prototype;
-          obj = obj || create(prototype);
-          defineProperties(obj, {
-            _status: undefined,
-            _result: undefined,
-            _resolveReactions: undefined,
-            _rejectReactions: undefined,
-            _promiseConstructor: undefined
-          });
-          obj._promiseConstructor = constructor;
-          return obj;
-        }
-      });
-
-      var _promiseAllResolver = function(index, values, capability, remaining) {
-        var done = false;
-        return function(x) {
-          if (done) { return; } // protect against being called multiple times
-          done = true;
-          values[index] = x;
-          if ((--remaining.count) === 0) {
-            var resolve = capability.resolve;
-            resolve(values); // call w/ this===undefined
-          }
-        };
-      };
-
-      Promise.all = function(iterable) {
-        var C = this;
-        var capability = new PromiseCapability(C);
-        var resolve = capability.resolve;
-        var reject = capability.reject;
-        try {
-          if (!ES.IsIterable(iterable)) {
-            throw new TypeError('bad iterable');
-          }
-          var it = ES.GetIterator(iterable);
-          var values = [], remaining = { count: 1 };
-          for (var index = 0; ; index++) {
-            var next = ES.IteratorNext(it);
-            if (next.done) {
-              break;
-            }
-            var nextPromise = C.resolve(next.value);
-            var resolveElement = _promiseAllResolver(
-              index, values, capability, remaining
-            );
-            remaining.count++;
-            nextPromise.then(resolveElement, capability.reject);
-          }
-          if ((--remaining.count) === 0) {
-            resolve(values); // call w/ this===undefined
-          }
-        } catch (e) {
-          reject(e);
-        }
-        return capability.promise;
-      };
-
-      Promise.race = function(iterable) {
-        var C = this;
-        var capability = new PromiseCapability(C);
-        var resolve = capability.resolve;
-        var reject = capability.reject;
-        try {
-          if (!ES.IsIterable(iterable)) {
-            throw new TypeError('bad iterable');
-          }
-          var it = ES.GetIterator(iterable);
-          while (true) {
-            var next = ES.IteratorNext(it);
-            if (next.done) {
-              // If iterable has no items, resulting promise will never
-              // resolve; see:
-              // https://github.com/domenic/promises-unwrapping/issues/75
-              // https://bugs.ecmascript.org/show_bug.cgi?id=2515
-              break;
-            }
-            var nextPromise = C.resolve(next.value);
-            nextPromise.then(resolve, reject);
-          }
-        } catch (e) {
-          reject(e);
-        }
-        return capability.promise;
-      };
-
-      Promise.reject = function(reason) {
-        var C = this;
-        var capability = new PromiseCapability(C);
-        var reject = capability.reject;
-        reject(reason); // call with this===undefined
-        return capability.promise;
-      };
-
-      Promise.resolve = function(v) {
-        var C = this;
-        if (ES.IsPromise(v)) {
-          var constructor = v._promiseConstructor;
-          if (constructor === C) { return v; }
-        }
-        var capability = new PromiseCapability(C);
-        var resolve = capability.resolve;
-        resolve(v); // call with this===undefined
-        return capability.promise;
-      };
-
-      Promise.prototype['catch'] = function( onRejected ) {
-        return this.then(undefined, onRejected);
-      };
-
-      Promise.prototype.then = function( onFulfilled, onRejected ) {
-        var promise = this;
-        if (!ES.IsPromise(promise)) { throw new TypeError('not a promise'); }
-        // this.constructor not this._promiseConstructor; see
-        // https://bugs.ecmascript.org/show_bug.cgi?id=2513
-        var C = this.constructor;
-        var capability = new PromiseCapability(C);
-        if (!ES.IsCallable(onRejected)) {
-          onRejected = function(e) { throw e; };
-        }
-        if (!ES.IsCallable(onFulfilled)) {
-          onFulfilled = function(x) { return x; };
-        }
-        var resolutionHandler =
-          promiseResolutionHandler(promise, onFulfilled, onRejected);
-        var resolveReaction =
-          { capability: capability, handler: resolutionHandler };
-        var rejectReaction =
-          { capability: capability, handler: onRejected };
-        switch (promise._status) {
-        case 'unresolved':
-          promise._resolveReactions.push(resolveReaction);
-          promise._rejectReactions.push(rejectReaction);
-          break;
-        case 'has-resolution':
-          triggerPromiseReactions([resolveReaction], promise._result);
-          break;
-        case 'has-rejection':
-          triggerPromiseReactions([rejectReaction], promise._result);
-          break;
-        default:
-          throw new TypeError('unexpected');
-        }
-        return capability.promise;
-      };
-
-      return Promise;
-    })();
-    // export the Promise constructor.
-    defineProperties(globals, { Promise: PromiseShim });
-    // In Chrome 33 (and thereabouts) Promise is defined, but the
-    // implementation is buggy in a number of ways.  Let's check subclassing
-    // support to see if we have a buggy implementation.
-    var promiseSupportsSubclassing = supportsSubclassing(globals.Promise, function(S) {
-      return S.resolve(42) instanceof S;
-    });
-    var promiseIgnoresNonFunctionThenCallbacks = (function () {
-      try {
-        globals.Promise.reject(42).then(null, 5).then(null, function () {});
-        return true;
-      } catch (ex) {
-        return false;
-      }
-    }());
-    if (!promiseSupportsSubclassing || !promiseIgnoresNonFunctionThenCallbacks) {
-      globals.Promise = PromiseShim;
-    }
-
-    // Map and Set require a true ES5 environment
-    if (supportsDescriptors) {
-
-      var fastkey = function fastkey(key) {
-        var type = typeof key;
-        if (type === 'string') {
-          return '$' + key;
-        } else if (type === 'number') {
-          // note that -0 will get coerced to "0" when used as a property key
-          return key;
-        }
-        return null;
-      };
-
-      var emptyObject = function emptyObject() {
-        // accomodate some older not-quite-ES5 browsers
-        return Object.create ? Object.create(null) : {};
-      };
-
-      var collectionShims = {
-        Map: (function() {
-
-          var empty = {};
-
-          function MapEntry(key, value) {
-            this.key = key;
-            this.value = value;
-            this.next = null;
-            this.prev = null;
-          }
-
-          MapEntry.prototype.isRemoved = function() {
-            return this.key === empty;
-          };
-
-          function MapIterator(map, kind) {
-            this.head = map._head;
-            this.i = this.head;
-            this.kind = kind;
-          }
-
-          MapIterator.prototype = {
-            next: function() {
-              var i = this.i, kind = this.kind, head = this.head, result;
-              if (this.i === undefined) {
-                return { value: undefined, done: true };
-              }
-              while (i.isRemoved() && i !== head) {
-                // back up off of removed entries
-                i = i.prev;
-              }
-              // advance to next unreturned element.
-              while (i.next !== head) {
-                i = i.next;
-                if (!i.isRemoved()) {
-                  if (kind === "key") {
-                    result = i.key;
-                  } else if (kind === "value") {
-                    result = i.value;
-                  } else {
-                    result = [i.key, i.value];
-                  }
-                  this.i = i;
-                  return { value: result, done: false };
-                }
-              }
-              // once the iterator is done, it is done forever.
-              this.i = undefined;
-              return { value: undefined, done: true };
-            }
-          };
-          addIterator(MapIterator.prototype);
-
-          function Map() {
-            var map = this;
-            map = emulateES6construct(map);
-            if (!map._es6map) {
-              throw new TypeError('bad map');
-            }
-
-            var head = new MapEntry(null, null);
-            // circular doubly-linked list.
-            head.next = head.prev = head;
-
-            defineProperties(map, {
-              '_head': head,
-              '_storage': emptyObject(),
-              '_size': 0
-            });
-
-            // Optionally initialize map from iterable
-            var iterable = arguments[0];
-            if (iterable !== undefined && iterable !== null) {
-              var it = ES.GetIterator(iterable);
-              var adder = map.set;
-              if (!ES.IsCallable(adder)) { throw new TypeError('bad map'); }
-              while (true) {
-                var next = ES.IteratorNext(it);
-                if (next.done) { break; }
-                var nextItem = next.value;
-                if (!ES.TypeIsObject(nextItem)) {
-                  throw new TypeError('expected iterable of pairs');
-                }
-                adder.call(map, nextItem[0], nextItem[1]);
-              }
-            }
-            return map;
-          }
-          var Map$prototype = Map.prototype;
-          defineProperties(Map, {
-            '@@create': function(obj) {
-              var constructor = this;
-              var prototype = constructor.prototype || Map$prototype;
-              obj = obj || create(prototype);
-              defineProperties(obj, { _es6map: true });
-              return obj;
-            }
-          });
-
-          Object.defineProperty(Map.prototype, 'size', {
-            configurable: true,
-            enumerable: false,
-            get: function() {
-              if (typeof this._size === 'undefined') {
-                throw new TypeError('size method called on incompatible Map');
-              }
-              return this._size;
-            }
-          });
-
-          defineProperties(Map.prototype, {
-            get: function(key) {
-              var fkey = fastkey(key);
-              if (fkey !== null) {
-                // fast O(1) path
-                var entry = this._storage[fkey];
-                return entry ? entry.value : undefined;
-              }
-              var head = this._head, i = head;
-              while ((i = i.next) !== head) {
-                if (ES.SameValueZero(i.key, key)) {
-                  return i.value;
-                }
-              }
-              return undefined;
-            },
-
-            has: function(key) {
-              var fkey = fastkey(key);
-              if (fkey !== null) {
-                // fast O(1) path
-                return typeof this._storage[fkey] !== 'undefined';
-              }
-              var head = this._head, i = head;
-              while ((i = i.next) !== head) {
-                if (ES.SameValueZero(i.key, key)) {
-                  return true;
-                }
-              }
-              return false;
-            },
-
-            set: function(key, value) {
-              var head = this._head, i = head, entry;
-              var fkey = fastkey(key);
-              if (fkey !== null) {
-                // fast O(1) path
-                if (typeof this._storage[fkey] !== 'undefined') {
-                  this._storage[fkey].value = value;
-                  return;
-                } else {
-                  entry = this._storage[fkey] = new MapEntry(key, value);
-                  i = head.prev;
-                  // fall through
-                }
-              }
-              while ((i = i.next) !== head) {
-                if (ES.SameValueZero(i.key, key)) {
-                  i.value = value;
-                  return;
-                }
-              }
-              entry = entry || new MapEntry(key, value);
-              if (ES.SameValue(-0, key)) {
-                entry.key = +0; // coerce -0 to +0 in entry
-              }
-              entry.next = this._head;
-              entry.prev = this._head.prev;
-              entry.prev.next = entry;
-              entry.next.prev = entry;
-              this._size += 1;
-            },
-
-            'delete': function(key) {
-              var head = this._head, i = head;
-              var fkey = fastkey(key);
-              if (fkey !== null) {
-                // fast O(1) path
-                if (typeof this._storage[fkey] === 'undefined') {
-                  return false;
-                }
-                i = this._storage[fkey].prev;
-                delete this._storage[fkey];
-                // fall through
-              }
-              while ((i = i.next) !== head) {
-                if (ES.SameValueZero(i.key, key)) {
-                  i.key = i.value = empty;
-                  i.prev.next = i.next;
-                  i.next.prev = i.prev;
-                  this._size -= 1;
-                  return true;
-                }
-              }
-              return false;
-            },
-
-            clear: function() {
-              this._size = 0;
-              this._storage = emptyObject();
-              var head = this._head, i = head, p = i.next;
-              while ((i = p) !== head) {
-                i.key = i.value = empty;
-                p = i.next;
-                i.next = i.prev = head;
-              }
-              head.next = head.prev = head;
-            },
-
-            keys: function() {
-              return new MapIterator(this, "key");
-            },
-
-            values: function() {
-              return new MapIterator(this, "value");
-            },
-
-            entries: function() {
-              return new MapIterator(this, "key+value");
-            },
-
-            forEach: function(callback) {
-              var context = arguments.length > 1 ? arguments[1] : null;
-              var it = this.entries();
-              for (var entry = it.next(); !entry.done; entry = it.next()) {
-                callback.call(context, entry.value[1], entry.value[0], this);
-              }
-            }
-          });
-          addIterator(Map.prototype, function() { return this.entries(); });
-
-          return Map;
-        })(),
-
-        Set: (function() {
-          // Creating a Map is expensive.  To speed up the common case of
-          // Sets containing only string or numeric keys, we use an object
-          // as backing storage and lazily create a full Map only when
-          // required.
-          var SetShim = function Set() {
-            var set = this;
-            set = emulateES6construct(set);
-            if (!set._es6set) {
-              throw new TypeError('bad set');
-            }
-
-            defineProperties(set, {
-              '[[SetData]]': null,
-              '_storage': emptyObject()
-            });
-
-            // Optionally initialize map from iterable
-            var iterable = arguments[0];
-            if (iterable !== undefined && iterable !== null) {
-              var it = ES.GetIterator(iterable);
-              var adder = set.add;
-              if (!ES.IsCallable(adder)) { throw new TypeError('bad set'); }
-              while (true) {
-                var next = ES.IteratorNext(it);
-                if (next.done) { break; }
-                var nextItem = next.value;
-                adder.call(set, nextItem);
-              }
-            }
-            return set;
-          };
-          var Set$prototype = SetShim.prototype;
-          defineProperties(SetShim, {
-            '@@create': function(obj) {
-              var constructor = this;
-              var prototype = constructor.prototype || Set$prototype;
-              obj = obj || create(prototype);
-              defineProperties(obj, { _es6set: true });
-              return obj;
-            }
-          });
-
-          // Switch from the object backing storage to a full Map.
-          var ensureMap = function ensureMap(set) {
-            if (!set['[[SetData]]']) {
-              var m = set['[[SetData]]'] = new collectionShims.Map();
-              Object.keys(set._storage).forEach(function(k) {
-                // fast check for leading '$'
-                if (k.charCodeAt(0) === 36) {
-                  k = k.substring(1);
-                } else {
-                  k = +k;
-                }
-                m.set(k, k);
-              });
-              set._storage = null; // free old backing storage
-            }
-          };
-
-          Object.defineProperty(SetShim.prototype, 'size', {
-            configurable: true,
-            enumerable: false,
-            get: function() {
-              if (typeof this._storage === 'undefined') {
-                // https://github.com/paulmillr/es6-shim/issues/176
-                throw new TypeError('size method called on incompatible Set');
-              }
-              ensureMap(this);
-              return this['[[SetData]]'].size;
-            }
-          });
-
-          defineProperties(SetShim.prototype, {
-            has: function(key) {
-              var fkey;
-              if (this._storage && (fkey = fastkey(key)) !== null) {
-                return !!this._storage[fkey];
-              }
-              ensureMap(this);
-              return this['[[SetData]]'].has(key);
-            },
-
-            add: function(key) {
-              var fkey;
-              if (this._storage && (fkey = fastkey(key)) !== null) {
-                this._storage[fkey]=true;
-                return;
-              }
-              ensureMap(this);
-              return this['[[SetData]]'].set(key, key);
-            },
-
-            'delete': function(key) {
-              var fkey;
-              if (this._storage && (fkey = fastkey(key)) !== null) {
-                delete this._storage[fkey];
-                return;
-              }
-              ensureMap(this);
-              return this['[[SetData]]']['delete'](key);
-            },
-
-            clear: function() {
-              if (this._storage) {
-                this._storage = emptyObject();
-                return;
-              }
-              return this['[[SetData]]'].clear();
-            },
-
-            keys: function() {
-              ensureMap(this);
-              return this['[[SetData]]'].keys();
-            },
-
-            values: function() {
-              ensureMap(this);
-              return this['[[SetData]]'].values();
-            },
-
-            entries: function() {
-              ensureMap(this);
-              return this['[[SetData]]'].entries();
-            },
-
-            forEach: function(callback) {
-              var context = arguments.length > 1 ? arguments[1] : null;
-              var entireSet = this;
-              ensureMap(this);
-              this['[[SetData]]'].forEach(function(value, key) {
-                callback.call(context, key, key, entireSet);
-              });
-            }
-          });
-          addIterator(SetShim.prototype, function() { return this.values(); });
-
-          return SetShim;
-        })()
-      };
-      defineProperties(globals, collectionShims);
-
-      if (globals.Map || globals.Set) {
-        /*
-          - In Firefox < 23, Map#size is a function.
-          - In all current Firefox, Set#entries/keys/values & Map#clear do not exist
-          - https://bugzilla.mozilla.org/show_bug.cgi?id=869996
-          - In Firefox 24, Map and Set do not implement forEach
-          - In Firefox 25 at least, Map and Set are callable without "new"
-        */
-        if (
-          typeof globals.Map.prototype.clear !== 'function' ||
-          new globals.Set().size !== 0 ||
-          new globals.Map().size !== 0 ||
-          typeof globals.Map.prototype.keys !== 'function' ||
-          typeof globals.Set.prototype.keys !== 'function' ||
-          typeof globals.Map.prototype.forEach !== 'function' ||
-          typeof globals.Set.prototype.forEach !== 'function' ||
-          isCallableWithoutNew(globals.Map) ||
-          isCallableWithoutNew(globals.Set) ||
-          !supportsSubclassing(globals.Map, function(M) {
-            return (new M([])) instanceof M;
-          })
-        ) {
-          globals.Map = collectionShims.Map;
-          globals.Set = collectionShims.Set;
-        }
-      }
-      // Shim incomplete iterator implementations.
-      addIterator(Object.getPrototypeOf((new globals.Map()).keys()));
-      addIterator(Object.getPrototypeOf((new globals.Set()).keys()));
-    }
-  };
-
-  if (typeof define === 'function' && define.amd) {
-    define('es6-shim',main); // RequireJS
-  } else {
-    main(); // CommonJS and <script>
-  }
-})();
-
-
-// Copyright (C) 2011-2012 Software Languages Lab, Vrije Universiteit Brussel
-// This code is dual-licensed under both the Apache License and the MPL
-
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/* Version: MPL 1.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is a shim for the ES-Harmony reflection module
- *
- * The Initial Developer of the Original Code is
- * Tom Van Cutsem, Vrije Universiteit Brussel.
- * Portions created by the Initial Developer are Copyright (C) 2011-2012
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *
- */
-
- // ----------------------------------------------------------------------------
-
- // This file is a polyfill for the upcoming ECMAScript Reflect API,
- // including support for Proxies. See the draft specification at:
- // http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api
- // http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies
-
- // For an implementation of the Handler API, see handlers.js, which implements:
- // http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api
-
- // This implementation supersedes the earlier polyfill at:
- // code.google.com/p/es-lab/source/browse/trunk/src/proxies/DirectProxies.js
-
- // This code was tested on tracemonkey / Firefox 12
-//  (and should run fine on older Firefox versions starting with FF4)
- // The code also works correctly on
- //   v8 --harmony_proxies --harmony_weakmaps (v3.6.5.1)
-
- // Language Dependencies:
- //  - ECMAScript 5/strict
- //  - "old" (i.e. non-direct) Harmony Proxies
- //  - Harmony WeakMaps
- // Patches:
- //  - Object.{freeze,seal,preventExtensions}
- //  - Object.{isFrozen,isSealed,isExtensible}
- //  - Object.getPrototypeOf
- //  - Object.prototype.valueOf
- //  - Object.prototype.isPrototypeOf
- //  - Object.prototype.toString
- //  - Object.prototype.hasOwnProperty
- //  - Object.getOwnPropertyDescriptor
- //  - Object.keys
- //  - Function.prototype.toString
- //  - Date.prototype.toString
- //  - Array.isArray
- //  - Proxy
- // Adds new globals:
- //  - Reflect
-
- // Direct proxies can be created via Proxy(target, handler)
-
- // ----------------------------------------------------------------------------
-
-(function(global){ // function-as-module pattern
-
-
-// === Direct Proxies: Invariant Enforcement ===
-
-// Direct proxies build on non-direct proxies by automatically wrapping
-// all user-defined proxy handlers in a Validator handler that checks and
-// enforces ES5 invariants.
-
-// A direct proxy is a proxy for an existing object called the target object.
-
-// A Validator handler is a wrapper for a target proxy handler H.
-// The Validator forwards all operations to H, but additionally
-// performs a number of integrity checks on the results of some traps,
-// to make sure H does not violate the ES5 invariants w.r.t. non-configurable
-// properties and non-extensible, sealed or frozen objects.
-
-// For each property that H exposes as own, non-configurable
-// (e.g. by returning a descriptor from a call to getOwnPropertyDescriptor)
-// the Validator handler defines those properties on the target object.
-// When the proxy becomes non-extensible, also configurable own properties
-// are checked against the target.
-// We will call properties that are defined on the target object
-// "fixed properties".
-
-// We will name fixed non-configurable properties "sealed properties".
-// We will name fixed non-configurable non-writable properties "frozen
-// properties".
-
-// The Validator handler upholds the following invariants w.r.t. non-configurability:
-// - getOwnPropertyDescriptor cannot report sealed properties as non-existent
-// - getOwnPropertyDescriptor cannot report incompatible changes to the
-//   attributes of a sealed property (e.g. reporting a non-configurable
-//   property as configurable, or reporting a non-configurable, non-writable
-//   property as writable)
-// - getPropertyDescriptor cannot report sealed properties as non-existent
-// - getPropertyDescriptor cannot report incompatible changes to the
-//   attributes of a sealed property. It _can_ report incompatible changes
-//   to the attributes of non-own, inherited properties.
-// - defineProperty cannot make incompatible changes to the attributes of
-//   sealed properties
-// - deleteProperty cannot report a successful deletion of a sealed property
-// - hasOwn cannot report a sealed property as non-existent
-// - has cannot report a sealed property as non-existent
-// - get cannot report inconsistent values for frozen data
-//   properties, and must report undefined for sealed accessors with an
-//   undefined getter
-// - set cannot report a successful assignment for frozen data
-//   properties or sealed accessors with an undefined setter.
-// - get{Own}PropertyNames lists all sealed properties of the target.
-// - keys lists all enumerable sealed properties of the target.
-// - enumerate lists all enumerable sealed properties of the target.
-// - if a property of a non-extensible proxy is reported as non-existent,
-//   then it must forever be reported as non-existent. This applies to
-//   own and inherited properties and is enforced in the
-//   deleteProperty, get{Own}PropertyDescriptor, has{Own},
-//   get{Own}PropertyNames, keys and enumerate traps
-
-// Violation of any of these invariants by H will result in TypeError being
-// thrown.
-
-// Additionally, once Object.preventExtensions, Object.seal or Object.freeze
-// is invoked on the proxy, the set of own property names for the proxy is
-// fixed. Any property name that is not fixed is called a 'new' property.
-
-// The Validator upholds the following invariants regarding extensibility:
-// - getOwnPropertyDescriptor cannot report new properties as existent
-//   (it must report them as non-existent by returning undefined)
-// - defineProperty cannot successfully add a new property (it must reject)
-// - getOwnPropertyNames cannot list new properties
-// - hasOwn cannot report true for new properties (it must report false)
-// - keys cannot list new properties
-
-// Invariants currently not enforced:
-// - getOwnPropertyNames lists only own property names
-// - keys lists only enumerable own property names
-// Both traps may list more property names than are actually defined on the
-// target.
-
-// Invariants with regard to inheritance are currently not enforced.
-// - a non-configurable potentially inherited property on a proxy with
-//   non-mutable ancestry cannot be reported as non-existent
-// (An object with non-mutable ancestry is a non-extensible object whose
-// [[Prototype]] is either null or an object with non-mutable ancestry.)
-
-// Changes in Handler API compared to previous harmony:proxies, see:
-// http://wiki.ecmascript.org/doku.php?id=strawman:direct_proxies
-// http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies
-
-// ----------------------------------------------------------------------------
-
-// ---- WeakMap polyfill ----
-
-// TODO: find a proper WeakMap polyfill
-
-// define an empty WeakMap so that at least the Reflect module code
-// will work in the absence of WeakMaps. Proxy emulation depends on
-// actual WeakMaps, so will not work with this little shim.
-if (typeof WeakMap === "undefined") {
-  global.WeakMap = function(){};
-  global.WeakMap.prototype = {
-    get: function(k) { return undefined; },
-    set: function(k,v) { throw new Error("WeakMap not supported"); }
-  };
-}
-
-// ---- Normalization functions for property descriptors ----
-
-function isStandardAttribute(name) {
-  return /^(get|set|value|writable|enumerable|configurable)$/.test(name);
-}
-
-// Adapted from ES5 section 8.10.5
-function toPropertyDescriptor(obj) {
-  if (Object(obj) !== obj) {
-    throw new TypeError("property descriptor should be an Object, given: "+
-                        obj);
-  }
-  var desc = {};
-  if ('enumerable' in obj) { desc.enumerable = !!obj.enumerable; }
-  if ('configurable' in obj) { desc.configurable = !!obj.configurable; }
-  if ('value' in obj) { desc.value = obj.value; }
-  if ('writable' in obj) { desc.writable = !!obj.writable; }
-  if ('get' in obj) {
-    var getter = obj.get;
-    if (getter !== undefined && typeof getter !== "function") {
-      throw new TypeError("property descriptor 'get' attribute must be "+
-                          "callable or undefined, given: "+getter);
-    }
-    desc.get = getter;
-  }
-  if ('set' in obj) {
-    var setter = obj.set;
-    if (setter !== undefined && typeof setter !== "function") {
-      throw new TypeError("property descriptor 'set' attribute must be "+
-                          "callable or undefined, given: "+setter);
-    }
-    desc.set = setter;
-  }
-  if ('get' in desc || 'set' in desc) {
-    if ('value' in desc || 'writable' in desc) {
-      throw new TypeError("property descriptor cannot be both a data and an "+
-                          "accessor descriptor: "+obj);
-    }
-  }
-  return desc;
-}
-
-function isAccessorDescriptor(desc) {
-  if (desc === undefined) return false;
-  return ('get' in desc || 'set' in desc);
-}
-function isDataDescriptor(desc) {
-  if (desc === undefined) return false;
-  return ('value' in desc || 'writable' in desc);
-}
-function isGenericDescriptor(desc) {
-  if (desc === undefined) return false;
-  return !isAccessorDescriptor(desc) && !isDataDescriptor(desc);
-}
-
-function toCompletePropertyDescriptor(desc) {
-  var internalDesc = toPropertyDescriptor(desc);
-  if (isGenericDescriptor(internalDesc) || isDataDescriptor(internalDesc)) {
-    if (!('value' in internalDesc)) { internalDesc.value = undefined; }
-    if (!('writable' in internalDesc)) { internalDesc.writable = false; }
-  } else {
-    if (!('get' in internalDesc)) { internalDesc.get = undefined; }
-    if (!('set' in internalDesc)) { internalDesc.set = undefined; }
-  }
-  if (!('enumerable' in internalDesc)) { internalDesc.enumerable = false; }
-  if (!('configurable' in internalDesc)) { internalDesc.configurable = false; }
-  return internalDesc;
-}
-
-function isEmptyDescriptor(desc) {
-  return !('get' in desc) &&
-         !('set' in desc) &&
-         !('value' in desc) &&
-         !('writable' in desc) &&
-         !('enumerable' in desc) &&
-         !('configurable' in desc);
-}
-
-function isEquivalentDescriptor(desc1, desc2) {
-  return sameValue(desc1.get, desc2.get) &&
-         sameValue(desc1.set, desc2.set) &&
-         sameValue(desc1.value, desc2.value) &&
-         sameValue(desc1.writable, desc2.writable) &&
-         sameValue(desc1.enumerable, desc2.enumerable) &&
-         sameValue(desc1.configurable, desc2.configurable);
-}
-
-// copied from http://wiki.ecmascript.org/doku.php?id=harmony:egal
-function sameValue(x, y) {
-  if (x === y) {
-    // 0 === -0, but they are not identical
-    return x !== 0 || 1 / x === 1 / y;
-  }
-
-  // NaN !== NaN, but they are identical.
-  // NaNs are the only non-reflexive value, i.e., if x !== x,
-  // then x is a NaN.
-  // isNaN is broken: it converts its argument to number, so
-  // isNaN("foo") => true
-  return x !== x && y !== y;
-}
-
-/**
- * Returns a fresh property descriptor that is guaranteed
- * to be complete (i.e. contain all the standard attributes).
- * Additionally, any non-standard enumerable properties of
- * attributes are copied over to the fresh descriptor.
- *
- * If attributes is undefined, returns undefined.
- *
- * See also: http://wiki.ecmascript.org/doku.php?id=harmony:proxies_semantics
- */
-function normalizeAndCompletePropertyDescriptor(attributes) {
-  if (attributes === undefined) { return undefined; }
-  var desc = toCompletePropertyDescriptor(attributes);
-  // Note: no need to call FromPropertyDescriptor(desc), as we represent
-  // "internal" property descriptors as proper Objects from the start
-  for (var name in attributes) {
-    if (!isStandardAttribute(name)) {
-      Object.defineProperty(desc, name,
-        { value: attributes[name],
-          writable: true,
-          enumerable: true,
-          configurable: true });
-    }
-  }
-  return desc;
-}
-
-/**
- * Returns a fresh property descriptor whose standard
- * attributes are guaranteed to be data properties of the right type.
- * Additionally, any non-standard enumerable properties of
- * attributes are copied over to the fresh descriptor.
- *
- * If attributes is undefined, will throw a TypeError.
- *
- * See also: http://wiki.ecmascript.org/doku.php?id=harmony:proxies_semantics
- */
-function normalizePropertyDescriptor(attributes) {
-  var desc = toPropertyDescriptor(attributes);
-  // Note: no need to call FromGenericPropertyDescriptor(desc), as we represent
-  // "internal" property descriptors as proper Objects from the start
-  for (var name in attributes) {
-    if (!isStandardAttribute(name)) {
-      Object.defineProperty(desc, name,
-        { value: attributes[name],
-          writable: true,
-          enumerable: true,
-          configurable: true });
-    }
-  }
-  return desc;
-}
-
-// store a reference to the real ES5 primitives before patching them later
-var prim_preventExtensions =        Object.preventExtensions,
-    prim_seal =                     Object.seal,
-    prim_freeze =                   Object.freeze,
-    prim_isExtensible =             Object.isExtensible,
-    prim_isSealed =                 Object.isSealed,
-    prim_isFrozen =                 Object.isFrozen,
-    prim_getPrototypeOf =           Object.getPrototypeOf,
-    prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor,
-    prim_defineProperty =           Object.defineProperty,
-    prim_keys =                     Object.keys,
-    prim_isArray =                  Array.isArray,
-    prim_concat =                   Array.prototype.concat,
-    prim_isPrototypeOf =            Object.prototype.isPrototypeOf,
-    prim_hasOwnProperty =           Object.prototype.hasOwnProperty;
-
-// these will point to the patched versions of the respective methods on
-// Object. They are used within this module as the "intrinsic" bindings
-// of these methods (i.e. the "original" bindings as defined in the spec)
-var Object_isFrozen, Object_isSealed, Object_isExtensible, Object_getPrototypeOf;
-
-/**
- * A property 'name' is fixed if it is an own property of the target.
- */
-function isFixed(name, target) {
-  return ({}).hasOwnProperty.call(target, name);
-}
-function isSealed(name, target) {
-  var desc = Object.getOwnPropertyDescriptor(target, name);
-  if (desc === undefined) { return false; }
-  return desc.configurable === false;
-}
-function isSealedDesc(desc) {
-  return desc !== undefined && desc.configurable === false;
-}
-
-/**
- * Performs all validation that Object.defineProperty performs,
- * without actually defining the property. Returns a boolean
- * indicating whether validation succeeded.
- *
- * Implementation transliterated from ES5.1 section 8.12.9
- */
-function isCompatibleDescriptor(extensible, current, desc) {
-  if (current === undefined && extensible === false) {
-    return false;
-  }
-  if (current === undefined && extensible === true) {
-    return true;
-  }
-  if (isEmptyDescriptor(desc)) {
-    return true;
-  }
-  if (isEquivalentDescriptor(current, desc)) {
-    return true;
-  }
-  if (current.configurable === false) {
-    if (desc.configurable === true) {
-      return false;
-    }
-    if ('enumerable' in desc && desc.enumerable !== current.enumerable) {
-      return false;
-    }
-  }
-  if (isGenericDescriptor(desc)) {
-    return true;
-  }
-  if (isDataDescriptor(current) !== isDataDescriptor(desc)) {
-    if (current.configurable === false) {
-      return false;
-    }
-    return true;
-  }
-  if (isDataDescriptor(current) && isDataDescriptor(desc)) {
-    if (current.configurable === false) {
-      if (current.writable === false && desc.writable === true) {
-        return false;
-      }
-      if (current.writable === false) {
-        if ('value' in desc && !sameValue(desc.value, current.value)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-  if (isAccessorDescriptor(current) && isAccessorDescriptor(desc)) {
-    if (current.configurable === false) {
-      if ('set' in desc && !sameValue(desc.set, current.set)) {
-        return false;
-      }
-      if ('get' in desc && !sameValue(desc.get, current.get)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-// ES6 7.3.11 SetIntegrityLevel
-//  - based on draft May 22, but using Object.getOwnPropertyNames rather than
-//    Reflect.ownKeys (as ownKeys does no invariant checking)
-// level is one of "sealed" or "frozen"
-function setIntegrityLevel(target, level) {
-  var ownProps = Object.getOwnPropertyNames(target);
-  var pendingException = undefined;
-  if (level === "sealed") {
-    var l = +ownProps.length;
-    var k;
-    for (var i = 0; i < l; i++) {
-      k = String(ownProps[i]);
-      try {
-        Object.defineProperty(target, k, { configurable: false });
-      } catch (e) {
-        if (pendingException === undefined) {
-          pendingException = e;
-        }
-      }
-    }
-  } else {
-    // level === "frozen"
-    var l = +ownProps.length;
-    var k;
-    for (var i = 0; i < l; i++) {
-      k = String(ownProps[i]);
-      try {
-        var currentDesc = Object.getOwnPropertyDescriptor(target, k);
-        if (currentDesc !== undefined) {
-          var desc;
-          if (isAccessorDescriptor(currentDesc)) {
-            desc = { configurable: false }
-          } else {
-            desc = { configurable: false, writable: false }
-          }
-          Object.defineProperty(target, k, desc);
-        }        
-      } catch (e) {
-        if (pendingException === undefined) {
-          pendingException = e;
-        }
-      }
-    }
-  }
-  return Reflect.preventExtensions(target);
-}
-
-// ES6 7.3.12 TestIntegrityLevel
-//  - based on draft May 22, but using Object.getOwnPropertyNames rather than
-//    Reflect.ownKeys (as ownKeys does no invariant checking)
-// level is one of "sealed" or "frozen"
-function testIntegrityLevel(target, level) {
-  var isExtensible = Object_isExtensible(target);
-  if (isExtensible) return false;
-  
-  var ownProps = Object.getOwnPropertyNames(target);
-  var pendingException = undefined;
-  var configurable = false;
-  var writable = false;
-  
-  var l = +ownProps.length;
-  var k;
-  var currentDesc;
-  for (var i = 0; i < l; i++) {
-    k = String(ownProps[i]);
-    try {
-      currentDesc = Object.getOwnPropertyDescriptor(target, k);
-      configurable = configurable || currentDesc.configurable;
-      if (isDataDescriptor(currentDesc)) {
-        writable = writable || currentDesc.writable;
-      }
-    } catch (e) {
-      if (pendingException === undefined) {
-        pendingException = e;
-        configurable = true;
-      }
-    }
-  }
-  if (pendingException !== undefined) {
-    throw pendingException;
-  }
-  if (level === "frozen" && writable === true) {
-    return false;
-  }
-  if (configurable === true) {
-    return false;
-  }
-  return true;
-}
-
-// ---- The Validator handler wrapper around user handlers ----
-
-/**
- * @param target the object wrapped by this proxy.
- * As long as the proxy is extensible, only non-configurable properties
- * are checked against the target. Once the proxy becomes non-extensible,
- * invariants w.r.t. non-extensibility are also enforced.
- *
- * @param handler the handler of the direct proxy. The object emulated by
- * this handler is validated against the target object of the direct proxy.
- * Any violations that the handler makes against the invariants
- * of the target will cause a TypeError to be thrown.
- *
- * Both target and handler must be proper Objects at initialization time.
- */
-function Validator(target, handler) {
-  // for non-revokable proxies, these are const references
-  // for revokable proxies, on revocation:
-  // - this.target is set to null
-  // - this.handler is set to a handler that throws on all traps
-  this.target  = target;
-  this.handler = handler;
-}
-
-Validator.prototype = {
-
-  /**
-   * If getTrap returns undefined, the caller should perform the
-   * default forwarding behavior.
-   * If getTrap returns normally otherwise, the return value
-   * will be a callable trap function. When calling the trap function,
-   * the caller is responsible for binding its |this| to |this.handler|.
-   */
-  getTrap: function(trapName) {
-    var trap = this.handler[trapName];
-    if (trap === undefined) {
-      // the trap was not defined,
-      // perform the default forwarding behavior
-      return undefined;
-    }
-
-    if (typeof trap !== "function") {
-      throw new TypeError(trapName + " trap is not callable: "+trap);
-    }
-
-    return trap;
-  },
-
-  // === fundamental traps ===
-
-  /**
-   * If name denotes a fixed property, check:
-   *   - whether targetHandler reports it as existent
-   *   - whether the returned descriptor is compatible with the fixed property
-   * If the proxy is non-extensible, check:
-   *   - whether name is not a new property
-   * Additionally, the returned descriptor is normalized and completed.
-   */
-  getOwnPropertyDescriptor: function(name) {
-    
-
-    var trap = this.getTrap("getOwnPropertyDescriptor");
-    if (trap === undefined) {
-      return Reflect.getOwnPropertyDescriptor(this.target, name);
-    }
-
-    name = String(name);
-    var desc = trap.call(this.handler, this.target, name);
-    desc = normalizeAndCompletePropertyDescriptor(desc);
-
-    var targetDesc = Object.getOwnPropertyDescriptor(this.target, name);
-    var extensible = Object.isExtensible(this.target);
-
-    if (desc === undefined) {
-      if (isSealedDesc(targetDesc)) {
-        throw new TypeError("cannot report non-configurable property '"+name+
-                            "' as non-existent");
-      }
-      if (!extensible && targetDesc !== undefined) {
-          // if handler is allowed to return undefined, we cannot guarantee
-          // that it will not return a descriptor for this property later.
-          // Once a property has been reported as non-existent on a non-extensible
-          // object, it should forever be reported as non-existent
-          throw new TypeError("cannot report existing own property '"+name+
-                              "' as non-existent on a non-extensible object");
-      }
-      return undefined;
-    }
-
-    // at this point, we know (desc !== undefined), i.e.
-    // targetHandler reports 'name' as an existing property
-
-    // Note: we could collapse the following two if-tests into a single
-    // test. Separating out the cases to improve error reporting.
-
-    if (!extensible) {
-      if (targetDesc === undefined) {
-        throw new TypeError("cannot report a new own property '"+
-                            name + "' on a non-extensible object");
-      }
-    }
-
-    if (name !== undefined) {
-      if (!isCompatibleDescriptor(extensible, targetDesc, desc)) {
-        throw new TypeError("cannot report incompatible property descriptor "+
-                            "for property '"+name+"'");
-      }
-    }
-
-    if (desc.configurable === false && !isSealedDesc(targetDesc)) {
-      // if the property is configurable or non-existent on the target,
-      // but is reported as a non-configurable property, it may later be
-      // reported as configurable or non-existent, which violates the
-      // invariant that if the property might change or disappear, the
-      // configurable attribute must be true.
-      throw new TypeError("cannot report a non-configurable descriptor "+
-                          "for configurable or non-existent property '"+name+"'");
-    }
-
-    return desc;
-  },
-
-  /**
-   * In the direct proxies design with refactored prototype climbing,
-   * this trap is deprecated. For proxies-as-prototypes, instead
-   * of calling this trap, the get, set, has or enumerate traps are
-   * called instead.
-   *
-   * In this implementation, we "abuse" getPropertyDescriptor to
-   * support trapping the get or set traps for proxies-as-prototypes.
-   * We do this by returning a getter/setter pair that invokes
-   * the corresponding traps.
-   *
-   * While this hack works for inherited property access, it has some
-   * quirks:
-   *
-   * In Firefox, this trap is only called after a prior invocation
-   * of the 'has' trap has returned true. Hence, expect the following
-   * behavior:
-   * <code>
-   * var child = Object.create(Proxy(target, handler));
-   * child[name] // triggers handler.has(target, name)
-   * // if that returns true, triggers handler.get(target, name, child)
-   * </code>
-   *
-   * On v8, the 'in' operator, when applied to an object that inherits
-   * from a proxy, will call getPropertyDescriptor and walk the proto-chain.
-   * That calls the below getPropertyDescriptor trap on the proxy. The
-   * result of the 'in'-operator is then determined by whether this trap
-   * returns undefined or a property descriptor object. That is why
-   * we first explicitly trigger the 'has' trap to determine whether
-   * the property exists.
-   *
-   * This has the side-effect that when enumerating properties on
-   * an object that inherits from a proxy in v8, only properties
-   * for which 'has' returns true are returned:
-   *
-   * <code>
-   * var child = Object.create(Proxy(target, handler));
-   * for (var prop in child) {
-   *   // only enumerates prop if (prop in child) returns true
-   * }
-   * </code>
-   */
-  getPropertyDescriptor: function(name) {
-    var handler = this;
-
-    if (!handler.has(name)) return undefined;
-
-    return {
-      get: function() {
-        return handler.get(this, name);
-      },
-      set: function(val) {
-        if (handler.set(this, name, val)) {
-          return val;
-        } else {
-          throw new TypeError("failed assignment to "+name);
-        }
-      },
-      enumerable: true,
-      configurable: true
-    };
-  },
-
-  /**
-   * If name denotes a fixed property, check for incompatible changes.
-   * If the proxy is non-extensible, check that new properties are rejected.
-   */
-  defineProperty: function(name, desc) {
-    // TODO(tvcutsem): the current tracemonkey implementation of proxies
-    // auto-completes 'desc', which is not correct. 'desc' should be
-    // normalized, but not completed. Consider:
-    // Object.defineProperty(proxy, 'foo', {enumerable:false})
-    // This trap will receive desc =
-    //  {value:undefined,writable:false,enumerable:false,configurable:false}
-    // This will also set all other attributes to their default value,
-    // which is unexpected and different from [[DefineOwnProperty]].
-    // Bug filed: https://bugzilla.mozilla.org/show_bug.cgi?id=601329
-
-    var trap = this.getTrap("defineProperty");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.defineProperty(this.target, name, desc);
-    }
-
-    name = String(name);
-    desc = normalizePropertyDescriptor(desc);
-    var success = trap.call(this.handler, this.target, name, desc);
-    success = !!success; // coerce to Boolean
-
-    if (success === true) {
-
-      var targetDesc = Object.getOwnPropertyDescriptor(this.target, name);
-      var extensible = Object.isExtensible(this.target);
-
-      // Note: we could collapse the following two if-tests into a single
-      // test. Separating out the cases to improve error reporting.
-
-      if (!extensible) {
-        if (targetDesc === undefined) {
-          throw new TypeError("cannot successfully add a new property '"+
-                              name + "' to a non-extensible object");
-        }
-      }
-
-      if (targetDesc !== undefined) {
-        if (!isCompatibleDescriptor(extensible, targetDesc, desc)) {
-          throw new TypeError("cannot define incompatible property "+
-                              "descriptor for property '"+name+"'");
-        }
-      }
-
-      if (desc.configurable === false && !isSealedDesc(targetDesc)) {
-        // if the property is configurable or non-existent on the target,
-        // but is successfully being redefined as a non-configurable property,
-        // it may later be reported as configurable or non-existent, which violates
-        // the invariant that if the property might change or disappear, the
-        // configurable attribute must be true.
-        throw new TypeError("cannot successfully define a non-configurable "+
-                            "descriptor for configurable or non-existent property '"+
-                            name+"'");
-      }
-
-    }
-
-    return success;
-  },
-
-  /**
-   * On success, check whether the target object is indeed non-extensible.
-   */
-  preventExtensions: function() {
-    var trap = this.getTrap("preventExtensions");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.preventExtensions(this.target);
-    }
-
-    var success = trap.call(this.handler, this.target);
-    success = !!success; // coerce to Boolean
-    if (success) {
-      if (Object_isExtensible(this.target)) {
-        throw new TypeError("can't report extensible object as non-extensible: "+
-                            this.target);
-      }
-    }
-    return success;
-  },
-
-  /**
-   * If name denotes a sealed property, check whether handler rejects.
-   */
-  delete: function(name) {
-    
-    var trap = this.getTrap("deleteProperty");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.deleteProperty(this.target, name);
-    }
-
-    name = String(name);
-    var res = trap.call(this.handler, this.target, name);
-    res = !!res; // coerce to Boolean
-
-    if (res === true) {
-      if (isSealed(name, this.target)) {
-        throw new TypeError("property '"+name+"' is non-configurable "+
-                            "and can't be deleted");
-      }
-    }
-
-    return res;
-  },
-
-  /**
-   * Checks whether the trap result does not contain any new properties
-   * if the proxy is non-extensible.
-   *
-   * Any own non-configurable properties of the target that are not included
-   * in the trap result give rise to a TypeError. As such, we check whether the
-   * returned result contains at least all sealed properties of the target
-   * object.
-   *
-   * Additionally, the trap result is normalized.
-   * Instead of returning the trap result directly:
-   *  - create and return a fresh Array,
-   *  - of which each element is coerced to String,
-   *  - which does not contain duplicates.
-   */
-  getOwnPropertyNames: function() {
-    var trap = this.getTrap("getOwnPropertyNames");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.getOwnPropertyNames(this.target);
-    }
-
-    var trapResult = trap.call(this.handler, this.target);
-
-    // propNames is used as a set of strings
-    var propNames = Object.create(null);
-    var numProps = +trapResult.length;
-    var result = new Array(numProps);
-
-    for (var i = 0; i < numProps; i++) {
-      var s = String(trapResult[i]);
-      if (propNames[s]) {
-        throw new TypeError("getOwnPropertyNames cannot list a "+
-                            "duplicate property '"+s+"'");
-      }
-      if (!Object.isExtensible(this.target) && !isFixed(s, this.target)) {
-        // non-extensible proxies don't tolerate new own property names
-        throw new TypeError("getOwnPropertyNames cannot list a new "+
-                            "property '"+s+"' on a non-extensible object");
-      }
-
-      propNames[s] = true;
-      result[i] = s;
-    }
-
-    var ownProps = Object.getOwnPropertyNames(this.target);
-    var target = this.target;
-    ownProps.forEach(function (ownProp) {
-      if (!propNames[ownProp]) {
-        if (isSealed(ownProp, target)) {
-          throw new TypeError("getOwnPropertyNames trap failed to include "+
-                              "non-configurable property '"+ownProp+"'");
-        }
-        if (!Object.isExtensible(target) &&
-            isFixed(ownProp, target)) {
-            // if handler is allowed to report ownProp as non-existent,
-            // we cannot guarantee that it will never later report it as
-            // existent. Once a property has been reported as non-existent
-            // on a non-extensible object, it should forever be reported as
-            // non-existent
-            throw new TypeError("cannot report existing own property '"+ownProp+
-                                "' as non-existent on a non-extensible object");
-        }
-      }
-    });
-
-    return result;
-  },
-
-  /**
-   * Checks whether the trap result is consistent with the state of the
-   * wrapped target.
-   */
-  isExtensible: function() {
-    var trap = this.getTrap("isExtensible");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.isExtensible(this.target);
-    }
-
-    var result = trap.call(this.handler, this.target);
-    result = !!result; // coerce to Boolean
-    var state = Object_isExtensible(this.target);
-    if (result !== state) {
-      if (result) {
-        throw new TypeError("cannot report non-extensible object as extensible: "+
-                             this.target);
-      } else {
-        throw new TypeError("cannot report extensible object as non-extensible: "+
-                             this.target);
-      }
-    }
-    return state;
-  },
-
-  /**
-   * Check whether the trap result corresponds to the target's [[Prototype]]
-   */
-  getPrototypeOf: function() {
-    var trap = this.getTrap("getPrototypeOf");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.getPrototypeOf(this.target);
-    }
-
-    var allegedProto = trap.call(this.handler, this.target);
-
-    if (!Object_isExtensible(this.target)) {
-      var actualProto = Object_getPrototypeOf(this.target);
-      if (!sameValue(allegedProto, actualProto)) {
-        throw new TypeError("prototype value does not match: " + this.target);
-      }
-    }
-
-    return allegedProto;
-  },
-
-  /**
-   * If target is non-extensible and setPrototypeOf trap returns true,
-   * check whether the trap result corresponds to the target's [[Prototype]]
-   */
-  setPrototypeOf: function(newProto) {
-    var trap = this.getTrap("setPrototypeOf");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.setPrototypeOf(this.target, newProto);
-    }
-
-    var success = trap.call(this.handler, this.target, newProto);
-
-    success = !!success;
-    if (success && !Object_isExtensible(this.target)) {
-      var actualProto = Object_getPrototypeOf(this.target);
-      if (!sameValue(newProto, actualProto)) {
-        throw new TypeError("prototype value does not match: " + this.target);
-      }
-    }
-
-    return success;
-  },
-
-  /**
-   * In the direct proxies design with refactored prototype climbing,
-   * this trap is deprecated. For proxies-as-prototypes, for-in will
-   * call the enumerate() trap. If that trap is not defined, the
-   * operation is forwarded to the target, no more fallback on this
-   * fundamental trap.
-   */
-  getPropertyNames: function() {
-    throw new TypeError("getPropertyNames trap is deprecated");
-  },
-
-  // === derived traps ===
-
-  /**
-   * If name denotes a fixed property, check whether the trap returns true.
-   */
-  has: function(name) {
-    var trap = this.getTrap("has");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.has(this.target, name);
-    }
-
-    name = String(name);
-    var res = trap.call(this.handler, this.target, name);
-    res = !!res; // coerce to Boolean
-
-    if (res === false) {
-      if (isSealed(name, this.target)) {
-        throw new TypeError("cannot report existing non-configurable own "+
-                            "property '"+ name + "' as a non-existent "+
-                            "property");
-      }
-      if (!Object.isExtensible(this.target) &&
-          isFixed(name, this.target)) {
-          // if handler is allowed to return false, we cannot guarantee
-          // that it will not return true for this property later.
-          // Once a property has been reported as non-existent on a non-extensible
-          // object, it should forever be reported as non-existent
-          throw new TypeError("cannot report existing own property '"+name+
-                              "' as non-existent on a non-extensible object");
-      }
-    }
-
-    // if res === true, we don't need to check for extensibility
-    // even for a non-extensible proxy that has no own name property,
-    // the property may have been inherited
-
-    return res;
-  },
-
-  /**
-   * If name denotes a fixed non-configurable, non-writable data property,
-   * check its return value against the previously asserted value of the
-   * fixed property.
-   */
-  get: function(receiver, name) {
-
-    // experimental support for invoke() trap on platforms that
-    // support __noSuchMethod__
-    /*
-    if (name === '__noSuchMethod__') {
-      var handler = this;
-      return function(name, args) {
-        return handler.invoke(receiver, name, args);
-      }
-    }
-    */
-
-    var trap = this.getTrap("get");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.get(this.target, name, receiver);
-    }
-
-    name = String(name);
-    var res = trap.call(this.handler, this.target, name, receiver);
-
-    var fixedDesc = Object.getOwnPropertyDescriptor(this.target, name);
-    // check consistency of the returned value
-    if (fixedDesc !== undefined) { // getting an existing property
-      if (isDataDescriptor(fixedDesc) &&
-          fixedDesc.configurable === false &&
-          fixedDesc.writable === false) { // own frozen data property
-        if (!sameValue(res, fixedDesc.value)) {
-          throw new TypeError("cannot report inconsistent value for "+
-                              "non-writable, non-configurable property '"+
-                              name+"'");
-        }
-      } else { // it's an accessor property
-        if (isAccessorDescriptor(fixedDesc) &&
-            fixedDesc.configurable === false &&
-            fixedDesc.get === undefined) {
-          if (res !== undefined) {
-            throw new TypeError("must report undefined for non-configurable "+
-                                "accessor property '"+name+"' without getter");
-          }
-        }
-      }
-    }
-
-    return res;
-  },
-
-  /**
-   * If name denotes a fixed non-configurable, non-writable data property,
-   * check that the trap rejects the assignment.
-   */
-  set: function(receiver, name, val) {
-    var trap = this.getTrap("set");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.set(this.target, name, val, receiver);
-    }
-
-    name = String(name);
-    var res = trap.call(this.handler, this.target, name, val, receiver);
-    res = !!res; // coerce to Boolean
-
-    // if success is reported, check whether property is truly assignable
-    if (res === true) {
-      var fixedDesc = Object.getOwnPropertyDescriptor(this.target, name);
-      if (fixedDesc !== undefined) { // setting an existing property
-        if (isDataDescriptor(fixedDesc) &&
-            fixedDesc.configurable === false &&
-            fixedDesc.writable === false) {
-          if (!sameValue(val, fixedDesc.value)) {
-            throw new TypeError("cannot successfully assign to a "+
-                                "non-writable, non-configurable property '"+
-                                name+"'");
-          }
-        } else {
-          if (isAccessorDescriptor(fixedDesc) &&
-              fixedDesc.configurable === false && // non-configurable
-              fixedDesc.set === undefined) {      // accessor with undefined setter
-            throw new TypeError("setting a property '"+name+"' that has "+
-                                " only a getter");
-          }
-        }
-      }
-    }
-
-    return res;
-  },
-
-  /**
-   * Any own enumerable non-configurable properties of the target that are not
-   * included in the trap result give rise to a TypeError. As such, we check
-   * whether the returned result contains at least all sealed enumerable properties
-   * of the target object.
-   *
-   * The trap should return an iterator.
-   *
-   * We convert the iterator to an array as current implementations expect
-   * enumerate to still return an array of strings.
-   */
-  enumerate: function() {
-    var trap = this.getTrap("enumerate");
-    if (trap === undefined) {
-      // default forwarding behavior
-      var trapResult = Reflect.enumerate(this.target);
-      var result = [];
-      var nxt = trapResult.next();
-      while (!nxt.done) {
-        result.push(String(nxt.value));
-        nxt = trapResult.next();
-      }
-      return result;
-    }
-
-    var trapResult = trap.call(this.handler, this.target);
-    
-    if (trapResult === null ||
-        trapResult === undefined ||
-        trapResult.next === undefined) {
-      throw new TypeError("enumerate trap should return an iterator, got: "+
-                          trapResult);    
-    }
-    
-    // propNames is used as a set of strings
-    var propNames = Object.create(null);
-    
-    // var numProps = +trapResult.length;
-    var result = []; // new Array(numProps);
-    
-    // trapResult is supposed to be an iterator
-    // drain iterator to array as current implementations still expect
-    // enumerate to return an array of strings
-    var nxt = trapResult.next();
-    
-    while (!nxt.done) {
-      var s = String(nxt.value);
-      if (propNames[s]) {
-        throw new TypeError("enumerate trap cannot list a "+
-                            "duplicate property '"+s+"'");
-      }
-      propNames[s] = true;
-      result.push(s);
-      nxt = trapResult.next();
-    }
-    
-    /*for (var i = 0; i < numProps; i++) {
-      var s = String(trapResult[i]);
-      if (propNames[s]) {
-        throw new TypeError("enumerate trap cannot list a "+
-                            "duplicate property '"+s+"'");
-      }
-
-      propNames[s] = true;
-      result[i] = s;
-    } */
-
-    var ownEnumerableProps = Object.keys(this.target);
-    var target = this.target;
-    ownEnumerableProps.forEach(function (ownEnumerableProp) {
-      if (!propNames[ownEnumerableProp]) {
-        if (isSealed(ownEnumerableProp, target)) {
-          throw new TypeError("enumerate trap failed to include "+
-                              "non-configurable enumerable property '"+
-                              ownEnumerableProp+"'");
-        }
-        if (!Object.isExtensible(target) &&
-            isFixed(ownEnumerableProp, target)) {
-            // if handler is allowed not to report ownEnumerableProp as an own
-            // property, we cannot guarantee that it will never report it as
-            // an own property later. Once a property has been reported as
-            // non-existent on a non-extensible object, it should forever be
-            // reported as non-existent
-            throw new TypeError("cannot report existing own property '"+
-                                ownEnumerableProp+"' as non-existent on a "+
-                                "non-extensible object");
-        }
-      }
-    });
-
-    return result;
-  },
-
-  /**
-   * The iterate trap is deprecated by the enumerate trap.
-   */
-  iterate: Validator.prototype.enumerate,
-
-  /**
-   * Any own non-configurable properties of the target that are not included
-   * in the trap result give rise to a TypeError. As such, we check whether the
-   * returned result contains at least all sealed properties of the target
-   * object.
-   *
-   * The trap result is normalized.
-   * The trap result is not returned directly. Instead:
-   *  - create and return a fresh Array,
-   *  - of which each element is coerced to String,
-   *  - which does not contain duplicates
-   *
-   * FIXME: keys trap is deprecated
-   */
-  /*
-  keys: function() {
-    var trap = this.getTrap("keys");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.keys(this.target);
-    }
-
-    var trapResult = trap.call(this.handler, this.target);
-
-    // propNames is used as a set of strings
-    var propNames = Object.create(null);
-    var numProps = +trapResult.length;
-    var result = new Array(numProps);
-
-    for (var i = 0; i < numProps; i++) {
-     var s = String(trapResult[i]);
-     if (propNames[s]) {
-       throw new TypeError("keys trap cannot list a "+
-                           "duplicate property '"+s+"'");
-     }
-     if (!Object.isExtensible(this.target) && !isFixed(s, this.target)) {
-       // non-extensible proxies don't tolerate new own property names
-       throw new TypeError("keys trap cannot list a new "+
-                           "property '"+s+"' on a non-extensible object");
-     }
-
-     propNames[s] = true;
-     result[i] = s;
-    }
-
-    var ownEnumerableProps = Object.keys(this.target);
-    var target = this.target;
-    ownEnumerableProps.forEach(function (ownEnumerableProp) {
-      if (!propNames[ownEnumerableProp]) {
-        if (isSealed(ownEnumerableProp, target)) {
-          throw new TypeError("keys trap failed to include "+
-                              "non-configurable enumerable property '"+
-                              ownEnumerableProp+"'");
-        }
-        if (!Object.isExtensible(target) &&
-            isFixed(ownEnumerableProp, target)) {
-            // if handler is allowed not to report ownEnumerableProp as an own
-            // property, we cannot guarantee that it will never report it as
-            // an own property later. Once a property has been reported as
-            // non-existent on a non-extensible object, it should forever be
-            // reported as non-existent
-            throw new TypeError("cannot report existing own property '"+
-                                ownEnumerableProp+"' as non-existent on a "+
-                                "non-extensible object");
-        }
-      }
-    });
-
-    return result;
-  },
-  */
-  
-  /**
-   * This trap is called a.o. by Object.keys, which filters out only
-   * the enumerable own properties.
-   *
-   * The trap should return an iterator. The proxy implementation only
-   * checks whether the return value is an object.
-   */
-  ownKeys: function() {
-    var trap = this.getTrap("ownKeys");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.ownKeys(this.target);
-    }
-
-    var trapResult = trap.call(this.handler, this.target);
-
-    if (trapResult === null ||
-        trapResult === undefined ||
-        typeof trapResult !== "object") {
-      throw new TypeError("ownKeys should return an iterator object, got " +
-                          trapResult);
-    }
-
-    return trapResult;
-  },
-
-  /**
-   * New trap that reifies [[Call]].
-   * If the target is a function, then a call to
-   *   proxy(...args)
-   * Triggers this trap
-   */
-  apply: function(target, thisBinding, args) {
-    var trap = this.getTrap("apply");
-    if (trap === undefined) {
-      return Reflect.apply(target, thisBinding, args);
-    }
-
-    if (typeof this.target === "function") {
-      return trap.call(this.handler, target, thisBinding, args);
-    } else {
-      throw new TypeError("apply: "+ target + " is not a function");
-    }
-  },
-
-  /**
-   * New trap that reifies [[Construct]].
-   * If the target is a function, then a call to
-   *   new proxy(...args)
-   * Triggers this trap
-   */
-  construct: function(target, args) {
-    var trap = this.getTrap("construct");
-    if (trap === undefined) {
-      return Reflect.construct(target, args);
-    }
-
-    if (typeof this.target === "function") {
-      return trap.call(this.handler, target, args);
-    } else {
-      throw new TypeError("new: "+ target + " is not a function");
-    }
-  }
-};
-
-// ---- end of the Validator handler wrapper handler ----
-
-// In what follows, a 'direct proxy' is a proxy
-// whose handler is a Validator. Such proxies can be made non-extensible,
-// sealed or frozen without losing the ability to trap.
-
-// maps direct proxies to their Validator handlers
-var directProxies = new WeakMap();
-
-// patch Object.{preventExtensions,seal,freeze} so that
-// they recognize fixable proxies and act accordingly
-Object.preventExtensions = function(subject) {
-  var vhandler = directProxies.get(subject);
-  if (vhandler !== undefined) {
-    if (vhandler.preventExtensions()) {
-      return subject;
-    } else {
-      throw new TypeError("preventExtensions on "+subject+" rejected");
-    }
-  } else {
-    return prim_preventExtensions(subject);
-  }
-};
-Object.seal = function(subject) {
-  return setIntegrityLevel(subject, "sealed");
-};
-Object.freeze = function(subject) {
-  return setIntegrityLevel(subject, "frozen");
-};
-Object.isExtensible = Object_isExtensible = function(subject) {
-  var vHandler = directProxies.get(subject);
-  if (vHandler !== undefined) {
-    return vHandler.isExtensible();
-  } else {
-    return prim_isExtensible(subject);
-  }
-};
-Object.isSealed = Object_isSealed = function(subject) {
-  return testIntegrityLevel(subject, "sealed");
-};
-Object.isFrozen = Object_isFrozen = function(subject) {
-  return testIntegrityLevel(subject, "frozen");
-};
-Object.getPrototypeOf = Object_getPrototypeOf = function(subject) {
-  var vHandler = directProxies.get(subject);
-  if (vHandler !== undefined) {
-    return vHandler.getPrototypeOf();
-  } else {
-    return prim_getPrototypeOf(subject);
-  }
-};
-
-// patch Object.getOwnPropertyDescriptor to directly call
-// the Validator.prototype.getOwnPropertyDescriptor trap
-// This is to circumvent an assertion in the built-in Proxy
-// trapping mechanism of v8, which disallows that trap to
-// return non-configurable property descriptors (as per the
-// old Proxy design)
-Object.getOwnPropertyDescriptor = function(subject, name) {
-  var vhandler = directProxies.get(subject);
-  if (vhandler !== undefined) {
-    return vhandler.getOwnPropertyDescriptor(name);
-  } else {
-    return prim_getOwnPropertyDescriptor(subject, name);
-  }
-};
-
-// patch Object.defineProperty to directly call
-// the Validator.prototype.defineProperty trap
-// This is to circumvent two issues with the built-in
-// trap mechanism:
-// 1) the current tracemonkey implementation of proxies
-// auto-completes 'desc', which is not correct. 'desc' should be
-// normalized, but not completed. Consider:
-// Object.defineProperty(proxy, 'foo', {enumerable:false})
-// This trap will receive desc =
-//  {value:undefined,writable:false,enumerable:false,configurable:false}
-// This will also set all other attributes to their default value,
-// which is unexpected and different from [[DefineOwnProperty]].
-// Bug filed: https://bugzilla.mozilla.org/show_bug.cgi?id=601329
-// 2) the current spidermonkey implementation does not
-// throw an exception when this trap returns 'false', but instead silently
-// ignores the operation (this is regardless of strict-mode)
-// 2a) v8 does throw an exception for this case, but includes the rather
-//     unhelpful error message:
-// 'Proxy handler #<Object> returned false from 'defineProperty' trap'
-Object.defineProperty = function(subject, name, desc) {
-  var vhandler = directProxies.get(subject);
-  if (vhandler !== undefined) {
-    var normalizedDesc = normalizePropertyDescriptor(desc);
-    var success = vhandler.defineProperty(name, normalizedDesc);
-    if (success === false) {
-      throw new TypeError("can't redefine property '"+name+"'");
-    }
-    return success;
-  } else {
-    return prim_defineProperty(subject, name, desc);
-  }
-};
-
-Object.keys = function(subject) {
-  var vHandler = directProxies.get(subject);
-  if (vHandler !== undefined) {
-    var ownKeysIterator = vHandler.ownKeys();
-    var nxt = ownKeysIterator.next();
-    var result = [];
-    while (!nxt.done) {
-      var k = String(nxt.value);
-      var desc = Object.getOwnPropertyDescriptor(subject, k);
-      if (desc !== undefined && desc.enumerable === true) {
-        result.push(k);
-      }
-      nxt = ownKeysIterator.next();
-    }
-    return result;
-  } else {
-    return prim_keys(subject);
-  }
-}
-
-// returns whether an argument is a reference to an object,
-// which is legal as a WeakMap key.
-function isObject(arg) {
-  var type = typeof arg;
-  return (type === 'object' && arg !== null) || (type === 'function');
-};
-
-// a wrapper for WeakMap.get which returns the undefined value
-// for keys that are not objects (in which case the underlying
-// WeakMap would have thrown a TypeError).
-function safeWeakMapGet(map, key) {
-  return isObject(key) ? map.get(key) : undefined;
-};
-
-// returns a new function of zero arguments that recursively
-// unwraps any proxies specified as the |this|-value.
-// The primitive is assumed to be a zero-argument method
-// that uses its |this|-binding.
-function makeUnwrapping0ArgMethod(primitive) {
-  return function builtin() {
-    var vHandler = safeWeakMapGet(directProxies, this);
-    if (vHandler !== undefined) {
-      return builtin.call(vHandler.target);
-    } else {
-      return primitive.call(this);
-    }
-  }
-};
-
-// returns a new function of 1 arguments that recursively
-// unwraps any proxies specified as the |this|-value.
-// The primitive is assumed to be a 1-argument method
-// that uses its |this|-binding.
-function makeUnwrapping1ArgMethod(primitive) {
-  return function builtin(arg) {
-    var vHandler = safeWeakMapGet(directProxies, this);
-    if (vHandler !== undefined) {
-      return builtin.call(vHandler.target, arg);
-    } else {
-      return primitive.call(this, arg);
-    }
-  }
-};
-
-Object.prototype.valueOf =
-  makeUnwrapping0ArgMethod(Object.prototype.valueOf);
-Object.prototype.toString =
-  makeUnwrapping0ArgMethod(Object.prototype.toString);
-Function.prototype.toString =
-  makeUnwrapping0ArgMethod(Function.prototype.toString);
-Date.prototype.toString =
-  makeUnwrapping0ArgMethod(Date.prototype.toString);
-
-Object.prototype.isPrototypeOf = function builtin(arg) {
-  // bugfix thanks to Bill Mark:
-  // built-in isPrototypeOf does not unwrap proxies used
-  // as arguments. So, we implement the builtin ourselves,
-  // based on the ECMAScript 6 spec. Our encoding will
-  // make sure that if a proxy is used as an argument,
-  // its getPrototypeOf trap will be called.
-  while (true) {
-    var vHandler2 = safeWeakMapGet(directProxies, arg);
-    if (vHandler2 !== undefined) {
-      arg = vHandler2.getPrototypeOf();
-      if (arg === null) {
-        return false;
-      } else if (sameValue(arg, this)) {
-        return true;
-      }
-    } else {
-      return prim_isPrototypeOf.call(this, arg);
-    }
-  }
-};
-
-Array.isArray = function(subject) {
-  var vHandler = safeWeakMapGet(directProxies, subject);
-  if (vHandler !== undefined) {
-    return Array.isArray(vHandler.target);
-  } else {
-    return prim_isArray(subject);
-  }
-};
-
-function isProxyArray(arg) {
-  var vHandler = safeWeakMapGet(directProxies, arg);
-  if (vHandler !== undefined) {
-    return Array.isArray(vHandler.target);
-  }
-  return false;
-}
-
-// Array.prototype.concat internally tests whether one of its
-// arguments is an Array, by checking whether [[Class]] == "Array"
-// As such, it will fail to recognize proxies-for-arrays as arrays.
-// We patch Array.prototype.concat so that it "unwraps" proxies-for-arrays
-// by making a copy. This will trigger the exact same sequence of
-// traps on the proxy-for-array as if we would not have unwrapped it.
-// See <https://github.com/tvcutsem/harmony-reflect/issues/19> for more.
-Array.prototype.concat = function(/*...args*/) {
-  var length;
-  for (var i = 0; i < arguments.length; i++) {
-    if (isProxyArray(arguments[i])) {
-      length = arguments[i].length;
-      arguments[i] = Array.prototype.slice.call(arguments[i], 0, length);
-    }
-  }
-  return prim_concat.apply(this, arguments);
-};
-
-// setPrototypeOf support on platforms that support __proto__
-
-var prim_setPrototypeOf = Object.setPrototypeOf;
-
-// patch and extract original __proto__ setter
-var __proto__setter = (function() {
-  var protoDesc = prim_getOwnPropertyDescriptor(Object.prototype,'__proto__');
-  if (protoDesc === undefined ||
-      typeof protoDesc.set !== "function") {
-    return function() {
-      throw new TypeError("setPrototypeOf not supported on this platform");
-    }
-  }
-
-  // see if we can actually mutate a prototype with the generic setter
-  // (e.g. Chrome v28 doesn't allow setting __proto__ via the generic setter)
-  try {
-    protoDesc.set.call({},{});
-  } catch (e) {
-    return function() {
-      throw new TypeError("setPrototypeOf not supported on this platform");
-    }
-  }
-
-  prim_defineProperty(Object.prototype, '__proto__', {
-    set: function(newProto) {
-      return Object.setPrototypeOf(this, newProto);
-    }
-  });
-
-  return protoDesc.set;
-}());
-
-Object.setPrototypeOf = function(target, newProto) {
-  var handler = directProxies.get(target);
-  if (handler !== undefined) {
-    if (handler.setPrototypeOf(newProto)) {
-      return target;
-    } else {
-      throw new TypeError("proxy rejected prototype mutation");
-    }
-  } else {
-    if (!Object_isExtensible(target)) {
-      throw new TypeError("can't set prototype on non-extensible object: " +
-                          target);
-    }
-    if (prim_setPrototypeOf)
-      return prim_setPrototypeOf(target, newProto);
-
-    if (Object(newProto) !== newProto || newProto === null) {
-      throw new TypeError("Object prototype may only be an Object or null: " +
-                         newProto);
-      // throw new TypeError("prototype must be an object or null")
-    }
-    __proto__setter.call(target, newProto);
-    return target;
-  }
-}
-
-Object.prototype.hasOwnProperty = function(name) {
-  var handler = safeWeakMapGet(directProxies, this);
-  if (handler !== undefined) {
-    var desc = handler.getOwnPropertyDescriptor(name);
-    return desc !== undefined;
-  } else {
-    return prim_hasOwnProperty.call(this, name);
-  }
-}
-
-// ============= Reflection module =============
-// see http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api
-
-var Reflect = global.Reflect = {
-  getOwnPropertyDescriptor: function(target, name) {
-    return Object.getOwnPropertyDescriptor(target, name);
-  },
-  getOwnPropertyNames: function(target) {
-    return Object.getOwnPropertyNames(target);
-  },
-  defineProperty: function(target, name, desc) {
-
-    // if target is a proxy, invoke its "defineProperty" trap
-    var handler = directProxies.get(target);
-    if (handler !== undefined) {
-      return handler.defineProperty(target, name, desc);
-    }
-
-    // Implementation transliterated from [[DefineOwnProperty]]
-    // see ES5.1 section 8.12.9
-    // this is the _exact same algorithm_ as the isCompatibleDescriptor
-    // algorithm defined above, except that at every place it
-    // returns true, this algorithm actually does define the property.
-    var current = Object.getOwnPropertyDescriptor(target, name);
-    var extensible = Object.isExtensible(target);
-    if (current === undefined && extensible === false) {
-      return false;
-    }
-    if (current === undefined && extensible === true) {
-      Object.defineProperty(target, name, desc); // should never fail
-      return true;
-    }
-    if (isEmptyDescriptor(desc)) {
-      return true;
-    }
-    if (isEquivalentDescriptor(current, desc)) {
-      return true;
-    }
-    if (current.configurable === false) {
-      if (desc.configurable === true) {
-        return false;
-      }
-      if ('enumerable' in desc && desc.enumerable !== current.enumerable) {
-        return false;
-      }
-    }
-    if (isGenericDescriptor(desc)) {
-      // no further validation necessary
-    } else if (isDataDescriptor(current) !== isDataDescriptor(desc)) {
-      if (current.configurable === false) {
-        return false;
-      }
-    } else if (isDataDescriptor(current) && isDataDescriptor(desc)) {
-      if (current.configurable === false) {
-        if (current.writable === false && desc.writable === true) {
-          return false;
-        }
-        if (current.writable === false) {
-          if ('value' in desc && !sameValue(desc.value, current.value)) {
-            return false;
-          }
-        }
-      }
-    } else if (isAccessorDescriptor(current) && isAccessorDescriptor(desc)) {
-      if (current.configurable === false) {
-        if ('set' in desc && !sameValue(desc.set, current.set)) {
-          return false;
-        }
-        if ('get' in desc && !sameValue(desc.get, current.get)) {
-          return false;
-        }
-      }
-    }
-    Object.defineProperty(target, name, desc); // should never fail
-    return true;
-  },
-  deleteProperty: function(target, name) {
-    var handler = directProxies.get(target);
-    if (handler !== undefined) {
-      return handler.deleteProperty(target, name);
-    }
-    
-    var desc = Object.getOwnPropertyDescriptor(target, name);
-    if (desc === undefined) {
-      return true;
-    }
-    if (desc.configurable === true) {
-      delete target[name];
-      return true;
-    }
-    return false;    
-  },
-  getPrototypeOf: function(target) {
-    return Object.getPrototypeOf(target);
-  },
-  setPrototypeOf: function(target, newProto) {
-    
-    var handler = directProxies.get(target);
-    if (handler !== undefined) {
-      return handler.setPrototypeOf(newProto);
-    }
-    
-    if (Object(newProto) !== newProto || newProto === null) {
-      throw new TypeError("Object prototype may only be an Object or null: " +
-                         newProto);
-    }
-    
-    if (!Object_isExtensible(target)) {
-      return false;
-    }
-    
-    var current = Object.getPrototypeOf(target);
-    if (sameValue(current, newProto)) {
-      return true;
-    }
-    
-    if (prim_setPrototypeOf) {
-      try {
-        prim_setPrototypeOf(target, newProto);
-        return true;
-      } catch (e) {
-        return false;
-      }
-    }
-
-    __proto__setter.call(target, newProto);
-    return true;
-  },
-  preventExtensions: function(target) {
-    var handler = directProxies.get(target);
-    if (handler !== undefined) {
-      return handler.preventExtensions();
-    }
-    prim_preventExtensions(target);
-    return true;
-  },
-  isExtensible: function(target) {
-    return Object.isExtensible(target);
-  },
-  has: function(target, name) {
-    return name in target;
-  },
-  get: function(target, name, receiver) {
-    receiver = receiver || target;
-
-    // if target is a proxy, invoke its "get" trap
-    var handler = directProxies.get(target);
-    if (handler !== undefined) {
-      return handler.get(receiver, name);
-    }
-
-    var desc = Object.getOwnPropertyDescriptor(target, name);
-    if (desc === undefined) {
-      var proto = Object.getPrototypeOf(target);
-      if (proto === null) {
-        return undefined;
-      }
-      return Reflect.get(proto, name, receiver);
-    }
-    if (isDataDescriptor(desc)) {
-      return desc.value;
-    }
-    var getter = desc.get;
-    if (getter === undefined) {
-      return undefined;
-    }
-    return desc.get.call(receiver);
-  },
-  // Reflect.set implementation based on latest version of [[SetP]] at
-  // http://wiki.ecmascript.org/doku.php?id=harmony:proto_climbing_refactoring
-  set: function(target, name, value, receiver) {
-    receiver = receiver || target;
-
-    // if target is a proxy, invoke its "set" trap
-    var handler = directProxies.get(target);
-    if (handler !== undefined) {
-      return handler.set(receiver, name, value);
-    }
-
-    // first, check whether target has a non-writable property
-    // shadowing name on receiver
-    var ownDesc = Object.getOwnPropertyDescriptor(target, name);
-
-    if (ownDesc === undefined) {
-      // name is not defined in target, search target's prototype
-      var proto = Object.getPrototypeOf(target);
-
-      if (proto !== null) {
-        // continue the search in target's prototype
-        return Reflect.set(proto, name, value, receiver);
-      }
-
-      // Rev16 change. Cf. https://bugs.ecmascript.org/show_bug.cgi?id=1549
-      // target was the last prototype, now we know that 'name' is not shadowed
-      // by an existing (accessor or data) property, so we can add the property
-      // to the initial receiver object
-      // (this branch will intentionally fall through to the code below)
-      ownDesc =
-        { value: undefined,
-          writable: true,
-          enumerable: true,
-          configurable: true };
-    }
-
-    // we now know that ownDesc !== undefined
-    if (isAccessorDescriptor(ownDesc)) {
-      var setter = ownDesc.set;
-      if (setter === undefined) return false;
-      setter.call(receiver, value); // assumes Function.prototype.call
-      return true;
-    }
-    // otherwise, isDataDescriptor(ownDesc) must be true
-    if (ownDesc.writable === false) return false;
-    // we found an existing writable data property on the prototype chain.
-    // Now update or add the data property on the receiver, depending on
-    // whether the receiver already defines the property or not.
-    var existingDesc = Object.getOwnPropertyDescriptor(receiver, name);
-    if (existingDesc !== undefined) {
-      var updateDesc =
-        { value: value,
-          // FIXME: it should not be necessary to describe the following
-          // attributes. Added to circumvent a bug in tracemonkey:
-          // https://bugzilla.mozilla.org/show_bug.cgi?id=601329
-          writable:     existingDesc.writable,
-          enumerable:   existingDesc.enumerable,
-          configurable: existingDesc.configurable };
-      Object.defineProperty(receiver, name, updateDesc);
-      return true;
-    } else {
-      if (!Object.isExtensible(receiver)) return false;
-      var newDesc =
-        { value: value,
-          writable: true,
-          enumerable: true,
-          configurable: true };
-      Object.defineProperty(receiver, name, newDesc);
-      return true;
-    }
-  },
-  /*invoke: function(target, name, args, receiver) {
-    receiver = receiver || target;
-
-    var handler = directProxies.get(target);
-    if (handler !== undefined) {
-      return handler.invoke(receiver, name, args);
-    }
-
-    var fun = Reflect.get(target, name, receiver);
-    return Function.prototype.apply.call(fun, receiver, args);
-  },*/
-  /*enumerate: function(target) {
-    var result = [];
-    for (var name in target) { result.push(name); };
-    return result;
-  },*/
-  enumerate: function(target) {
-    var handler = directProxies.get(target);
-    if (handler !== undefined) {
-      return handler.enumerate(handler.target);
-    }
-
-    var result = [];
-    for (var name in target) { result.push(name); };
-    var l = +result.length;
-    var idx = 0;
-    return {
-      next: function() {
-        if (idx === l) return { done: true };
-        return { done: false, value: result[idx++] };
-      }
-    };
-  },
-  // imperfect ownKeys implementation: in ES6, should also include
-  // symbol-keyed properties.
-  ownKeys: function(target) {
-    var handler = directProxies.get(target);
-    if (handler !== undefined) {
-      return handler.ownKeys();
-    }
-
-    var result = Reflect.getOwnPropertyNames(target);
-    var l = +result.length;
-    var idx = 0;
-    return {
-      next: function() {
-        if (idx === l) { return { done: true } };
-        return { done: false, value: result[idx++] };
-      }
-    };
-  },
-  apply: function(target, receiver, args) {
-    // target.apply(receiver, args)
-    return Function.prototype.apply.call(target, receiver, args);
-  },
-  construct: function(target, args) {
-    // return new target(...args);
-
-    // if target is a proxy, invoke its "construct" trap
-    var handler = directProxies.get(target);
-    if (handler !== undefined) {
-      return handler.construct(handler.target, args);
-    }
-
-    var proto = target.prototype;
-    var instance = (Object(proto) === proto) ? Object.create(proto) : {};
-    var result = Function.prototype.apply.call(target, instance, args);
-    return Object(result) === result ? result : instance;
-  }
-};
-
-var revokedHandler = Proxy.create({
-  get: function() { throw new TypeError("proxy is revoked"); }
-});
-
-// feature-test whether the Proxy global exists
-if (typeof Proxy !== "undefined") {
-
-  var primCreate = Proxy.create,
-      primCreateFunction = Proxy.createFunction;
-
-  global.Proxy = function(target, handler) {
-    // check that target is an Object
-    if (Object(target) !== target) {
-      throw new TypeError("Proxy target must be an Object, given "+target);
-    }
-    // check that handler is an Object
-    if (Object(handler) !== handler) {
-      throw new TypeError("Proxy handler must be an Object, given "+handler);
-    }
-
-    var vHandler = new Validator(target, handler);
-    var proxy;
-    if (typeof target === "function") {
-      proxy = primCreateFunction(vHandler,
-        // call trap
-        function() {
-          var args = Array.prototype.slice.call(arguments);
-          return vHandler.apply(target, this, args);
-        },
-        // construct trap
-        function() {
-          var args = Array.prototype.slice.call(arguments);
-          return vHandler.construct(target, args);
-        });
-    } else {
-      proxy = primCreate(vHandler, Object.getPrototypeOf(target));
-    }
-    directProxies.set(proxy, vHandler);
-    return proxy;
-  };
-
-  global.Proxy.revocable = function(target, handler) {
-    var proxy = new Proxy(target, handler);
-    var revoke = function() {
-      var vHandler = directProxies.get(proxy);
-      if (vHandler !== null) {
-        vHandler.target  = null;
-        vHandler.handler = revokedHandler;
-      }
-      return undefined;
-    };
-    return {proxy: proxy, revoke: revoke};
-  }
-
-} else {
-  // Proxy global not defined, so proxies are not supported
-
-  global.Proxy = function(_target, _handler) {
-    throw new Error("proxies not supported on this platform");
-  }
-
-}
-
-// for node.js modules, export every property in the Reflect object
-// as part of the module interface
-if (typeof exports !== 'undefined') {
-  Object.keys(Reflect).forEach(function (key) {
-    exports[key] = Reflect[key];
-  });
-}
-
-}(typeof exports !== 'undefined' ? global : this)); // function-as-module pattern;
-define("reflect", ["es6-shim"], (function (global) {
-    return function () {
-        var ret, fn;
-        return ret || global.Reflect;
-    };
-}(this)));
-
-define('resiliency/Retry',['../common/utils/Enum', 'reflect'], function($__0,$__2) {
+//# sourceMappingURL=../../common/utils/Enum.js.map;
+define('resiliency/Retry',["assert", '../common/utils/Enum'], function($__0,$__2) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
-  var $__1 = $__0,
-      EnumSymbol = $__1.EnumSymbol,
-      Enum = $__1.Enum;
-  var Reflect = $__2.default;
+    $__2 = {default: $__2};
+  var assert = $__0.assert;
+  var $__3 = $__2,
+      EnumSymbol = $__3.EnumSymbol,
+      Enum = $__3.Enum;
   var $__8 = [{}, {}, {}],
       INCREMENTAL = $__8[0],
       EXPONENTIAL = $__8[1],
@@ -7633,32 +3951,20 @@ define('resiliency/Retry',['../common/utils/Enum', 'reflect'], function($__0,$__
         $__12,
         $__13,
         $__14;
-    var $__9 = $traceurRuntime.assertObject($__8),
+    var $__9 = $__8,
         maxTries = ($__10 = $__9.maxTries) === void 0 ? 1 : $__10,
         maxDelay = ($__11 = $__9.maxDelay) === void 0 ? Infinity : $__11,
         delayRatio = ($__12 = $__9.delayRatio) === void 0 ? 1 : $__12,
         backoffStrategy = ($__13 = $__9.backoffStrategy) === void 0 ? BackoffStrategy.INCREMENTAL : $__13,
         intermediate = ($__14 = $__9.intermediate) === void 0 ? function() {} : $__14;
+    assert.argumentTypes(maxTries, $traceurRuntime.type.number, maxDelay, $traceurRuntime.type.number, delayRatio, $traceurRuntime.type.number, backoffStrategy, EnumSymbol, intermediate, Function);
     if (!BackoffStrategy.contains(backoffStrategy))
       throw Error('backoffStrategy value should be of Enum<BackoffStrategy>  type');
     this.maxTries = maxTries;
     this.maxDelay = maxDelay;
     this.delayRatio = delayRatio;
     this.intermediate = intermediate;
-    switch (backoffStrategy) {
-      case BackoffStrategy.INCREMENTAL:
-        this.backoffStrategy = this.incremental();
-        break;
-      case BackoffStrategy.EXPONENTIAL:
-        this.backoffStrategy = this.exponential();
-        break;
-      case BackoffStrategy.FIBONACCI:
-        this.backoffStrategy = this.fibonacci();
-        break;
-      default:
-        this.backoffStrategy = this.incremental();
-        break;
-    }
+    this.backoffStrategy = this.incremental();
   };
   var $Retry = Retry;
   ($traceurRuntime.createClass)(Retry, {
@@ -7678,6 +3984,7 @@ define('resiliency/Retry',['../common/utils/Enum', 'reflect'], function($__0,$__
               intermediate = $arguments[3] !== (void 0) ? $arguments[3] : this.intermediate;
               remainingTries = $arguments[4] !== (void 0) ? $arguments[4] : this.maxTries;
               $__4 = this;
+              assert.argumentTypes(target, Function, receiver, $traceurRuntime.type.any, args, $traceurRuntime.type.any, intermediate, Function, remainingTries, $traceurRuntime.type.number);
               delay = this._calculateDelay(remainingTries);
               $ctx.state = 8;
               break;
@@ -7707,13 +4014,14 @@ define('resiliency/Retry',['../common/utils/Enum', 'reflect'], function($__0,$__
       }, this);
     },
     _calculateDelay: function(remainingTries) {
+      assert.argumentTypes(remainingTries, $traceurRuntime.type.number);
       var delay = this.delayRatio * this.backoffStrategy.next().value;
-      return Math.min(delay, this.maxDelay);
+      return assert.returnType((Math.min(delay, this.maxDelay)), $traceurRuntime.type.number);
     },
     _sleep: function(ms) {
-      return new Promise((function(resolve) {
+      return assert.returnType((new Promise((function(resolve) {
         setTimeout(resolve, ms);
-      }));
+      }))), Promise);
     },
     incremental: $traceurRuntime.initGeneratorFunction(function $__16() {
       var i,
@@ -7867,20 +4175,9 @@ define('resiliency/Retry',['../common/utils/Enum', 'reflect'], function($__0,$__
                   }
                 }
               }
-              if (methodRetry || classRetry) {
-                proxifyed = true;
-                console.debug('applying retry aspect to: ', name);
-                $traceurRuntime.setProperty(obj, name, new Proxy(obj[$traceurRuntime.toProperty(name)], {apply: (function(target, receiver, args) {
-                    var retry = methodRetry || classRetry;
-                    return retry.try.call(retry, target, receiver, args);
-                  })}));
-              }
             }
           }
         }
-      }
-      if (!proxifyed) {
-        throw new Error('No @Retry annotations found on target class or its methods. Cannot apply Retry aspect');
       }
       return obj;
     }});
@@ -7898,24 +4195,28 @@ define('resiliency/Retry',['../common/utils/Enum', 'reflect'], function($__0,$__
   };
 });
 
-define('common/services/EventBus',['sockjs', 'stomp', '../utils/Enum', '../../resiliency/Retry'], function($__0,$__1,$__2,$__4) {
+//# sourceMappingURL=../resiliency/Retry.js.map;
+define('common/services/EventBus',["assert", 'sockjs', 'stomp', '../utils/Enum', '../../resiliency/Retry'], function($__0,$__2,$__3,$__4,$__6) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
-  if (!$__1 || !$__1.__esModule)
-    $__1 = {'default': $__1};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
+  if (!$__3 || !$__3.__esModule)
+    $__3 = {default: $__3};
   if (!$__4 || !$__4.__esModule)
-    $__4 = {'default': $__4};
-  $__0;
-  $__1;
-  var $__3 = $__2,
-      EnumSymbol = $__3.EnumSymbol,
-      Enum = $__3.Enum;
+    $__4 = {default: $__4};
+  if (!$__6 || !$__6.__esModule)
+    $__6 = {default: $__6};
+  var assert = $__0.assert;
+  $__2;
+  $__3;
   var $__5 = $__4,
-      BackoffStrategy = $__5.BackoffStrategy,
-      Retry = $__5.Retry;
+      EnumSymbol = $__5.EnumSymbol,
+      Enum = $__5.Enum;
+  var $__7 = $__6,
+      BackoffStrategy = $__7.BackoffStrategy,
+      Retry = $__7.Retry;
   var EBUS_CONFIG = {
     BASE_URL: 'http://localhost:8080/<YourBaaS>/stomp',
     CONNECTION_OPTIONS: {headers: {}}
@@ -7961,7 +4262,7 @@ define('common/services/EventBus',['sockjs', 'stomp', '../utils/Enum', '../../re
   var EventBus = function EventBus() {
     var baseUrl = arguments[0] !== (void 0) ? arguments[0] : EBUS_CONFIG.BASE_URL;
     var options = arguments[1] !== (void 0) ? arguments[1] : EBUS_CONFIG.CONNECTION_OPTIONS;
-    var $__6 = this;
+    var $__8 = this;
     $traceurRuntime.setProperty(this, cOptions, options);
     $traceurRuntime.setProperty(this, readyState, ReadyState.CLOSED);
     $traceurRuntime.setProperty(this, cBaseUrl, baseUrl);
@@ -7971,7 +4272,7 @@ define('common/services/EventBus',['sockjs', 'stomp', '../utils/Enum', '../../re
     $traceurRuntime.setProperty(this, onDisconnectDefaultListener, (function(error) {
       console.error('in onDisconnectDefaultListener. will try in 30sec. Error: ', error);
       setTimeout((function() {
-        return $__6.open(true, $__6[$traceurRuntime.toProperty(onDisconnectDefaultListener)]);
+        return $__8.open(true, $__8[$traceurRuntime.toProperty(onDisconnectDefaultListener)]);
       }), 30000);
     }));
   };
@@ -7985,38 +4286,39 @@ define('common/services/EventBus',['sockjs', 'stomp', '../utils/Enum', '../../re
     open: function() {
       var force = arguments[0] !== (void 0) ? arguments[0] : false;
       var onDisconnect = arguments[1] !== (void 0) ? arguments[1] : this[$traceurRuntime.toProperty(onDisconnectDefaultListener)];
-      var $__6 = this;
-      return new Promise((function(resolve, reject) {
-        if (force || $__6[$traceurRuntime.toProperty(readyState)] >= ReadyState.CLOSED) {
+      var $__8 = this;
+      assert.argumentTypes(force, $traceurRuntime.type.any, onDisconnect, Function);
+      return assert.returnType((new Promise((function(resolve, reject) {
+        if (force || $__8[$traceurRuntime.toProperty(readyState)] >= ReadyState.CLOSED) {
           try {
             throw undefined;
           } catch (socket) {
             {
               console.log('trying to open STOMP connection...');
-              socket = new SockJS($__6[$traceurRuntime.toProperty(cBaseUrl)]);
-              $__6.stompClient = Stomp.over(socket);
-              $traceurRuntime.setProperty($__6, readyState, ReadyState.CONNECTING);
-              $__6.stompClient.connect($__6[$traceurRuntime.toProperty(cOptions)].headers, (function(frame) {
+              socket = new SockJS($__8[$traceurRuntime.toProperty(cBaseUrl)]);
+              $__8.stompClient = Stomp.over(socket);
+              $traceurRuntime.setProperty($__8, readyState, ReadyState.CONNECTING);
+              $__8.stompClient.connect($__8[$traceurRuntime.toProperty(cOptions)].headers, (function(frame) {
                 if (frame.headers[$traceurRuntime.toProperty("user-name")]) {
-                  $traceurRuntime.setProperty($__6, readyState, ReadyState.AUTHENTICATED);
+                  $traceurRuntime.setProperty($__8, readyState, ReadyState.AUTHENTICATED);
                 } else {
-                  $traceurRuntime.setProperty($__6, readyState, ReadyState.OPEN);
+                  $traceurRuntime.setProperty($__8, readyState, ReadyState.OPEN);
                 }
-                $__6._resubscribe();
+                $__8._resubscribe();
                 console.group();
                 console.log('%cConnection Opened Succssfully.', 'background: #222; color: #bada55');
                 console.info(("%cFrame: " + frame), 'background: #222; color: #bada55');
                 console.info(("%cConnected username: %c" + frame.headers[$traceurRuntime.toProperty("user-name")]), 'background: #222; color: #bada55', 'background: #222; color: #7FFFD4');
                 console.info('Registering onDisconnect listener to monitoring future disconnects.');
-                $traceurRuntime.setProperty($__6, user, frame.headers[$traceurRuntime.toProperty("user-name")]);
-                $__6.stompClient.ws.onclose = (function(error) {
-                  $traceurRuntime.setProperty($__6, readyState, ReadyState.CLOSED);
+                $traceurRuntime.setProperty($__8, user, frame.headers[$traceurRuntime.toProperty("user-name")]);
+                $__8.stompClient.ws.onclose = (function(error) {
+                  $traceurRuntime.setProperty($__8, readyState, ReadyState.CLOSED);
                   onDisconnect(error);
                 });
                 console.groupEnd();
                 resolve(frame);
               }), (function(error) {
-                $traceurRuntime.setProperty($__6, readyState, ReadyState.CLOSED);
+                $traceurRuntime.setProperty($__8, readyState, ReadyState.CLOSED);
                 reject(error);
               }));
             }
@@ -8025,16 +4327,16 @@ define('common/services/EventBus',['sockjs', 'stomp', '../utils/Enum', '../../re
           console.info('EventBus already open');
           resolve();
         }
-      }));
+      }))), Promise);
     },
     close: function() {
       var force = arguments[0] !== (void 0) ? arguments[0] : false;
-      var $__6 = this;
+      var $__8 = this;
       return new Promise((function(resolve, reject) {
-        if (force || $__6[$traceurRuntime.toProperty(readyState)] < ReadyState.CLOSED) {
-          $traceurRuntime.setProperty($__6, readyState, ReadyState.CLOSING);
-          $__6.stompClient.disconnect((function() {
-            $traceurRuntime.setProperty($__6, readyState, ReadyState.CLOSED);
+        if (force || $__8[$traceurRuntime.toProperty(readyState)] < ReadyState.CLOSED) {
+          $traceurRuntime.setProperty($__8, readyState, ReadyState.CLOSING);
+          $__8.stompClient.disconnect((function() {
+            $traceurRuntime.setProperty($__8, readyState, ReadyState.CLOSED);
             console.log("%cSTOMP connection closed", 'background: #222; color: #bada55');
             resolve('STOMP connection closed');
           }));
@@ -8045,10 +4347,10 @@ define('common/services/EventBus',['sockjs', 'stomp', '../utils/Enum', '../../re
       }));
     },
     _resubscribe: function() {
-      var $__6 = this;
+      var $__8 = this;
       var myHandlers = this[$traceurRuntime.toProperty(handlers)];
       myHandlers.forEach((function(callback, address, myHandlers) {
-        $__6[$traceurRuntime.toProperty(subscriptions)].set(address, $__6.stompClient.subscribe(address, callback));
+        $__8[$traceurRuntime.toProperty(subscriptions)].set(address, $__8.stompClient.subscribe(address, callback));
       }));
     },
     registerHandler: function(address, callback) {
@@ -8066,9 +4368,9 @@ define('common/services/EventBus',['sockjs', 'stomp', '../utils/Enum', '../../re
     },
     send: function(address, data) {
       var headers = arguments[2] !== (void 0) ? arguments[2] : {};
-      var $__6 = this;
+      var $__8 = this;
       return new Promise((function(resolve, reject) {
-        var subscription = $__6.stompClient.subscribe(address, (function(result) {
+        var subscription = $__8.stompClient.subscribe(address, (function(result) {
           if (result.body) {
             resolve(JSON.parse(result.body));
           } else {
@@ -8104,28 +4406,29 @@ define('common/services/EventBus',['sockjs', 'stomp', '../utils/Enum', '../../re
   };
 });
 
+//# sourceMappingURL=../../common/services/EventBus.js.map;
 define('common/index',['./routes', './controllers/LoginController', './controllers/SettingsController', './services/AuthenticationService', './services/AuthorizationService', './services/UserService', './elements/hasPermission', './utils/AuthInterceptor', './services/EventBus', '../resiliency/Retry'], function($__0,$__2,$__4,$__6,$__8,$__10,$__12,$__14,$__16,$__18) {
   
   if (!$__0 || !$__0.__esModule)
-    $__0 = {'default': $__0};
+    $__0 = {default: $__0};
   if (!$__2 || !$__2.__esModule)
-    $__2 = {'default': $__2};
+    $__2 = {default: $__2};
   if (!$__4 || !$__4.__esModule)
-    $__4 = {'default': $__4};
+    $__4 = {default: $__4};
   if (!$__6 || !$__6.__esModule)
-    $__6 = {'default': $__6};
+    $__6 = {default: $__6};
   if (!$__8 || !$__8.__esModule)
-    $__8 = {'default': $__8};
+    $__8 = {default: $__8};
   if (!$__10 || !$__10.__esModule)
-    $__10 = {'default': $__10};
+    $__10 = {default: $__10};
   if (!$__12 || !$__12.__esModule)
-    $__12 = {'default': $__12};
+    $__12 = {default: $__12};
   if (!$__14 || !$__14.__esModule)
-    $__14 = {'default': $__14};
+    $__14 = {default: $__14};
   if (!$__16 || !$__16.__esModule)
-    $__16 = {'default': $__16};
+    $__16 = {default: $__16};
   if (!$__18 || !$__18.__esModule)
-    $__18 = {'default': $__18};
+    $__18 = {default: $__18};
   var routes = $__0.default;
   var $__3 = $__2,
       LoginController = $__3.LoginController,
@@ -8205,3 +4508,4 @@ define('common/index',['./routes', './controllers/LoginController', './controlle
   };
 });
 
+//# sourceMappingURL=../common/index.js.map;
